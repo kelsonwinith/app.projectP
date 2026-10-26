@@ -1,94 +1,88 @@
 # Technical & System Architecture 🏗️
 
-เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **CogniNest** ฉบับปรับปรุง เพื่อรองรับ **Block-Level Exclusive Locking (Private Typing -> Broadcast เมื่อเสร็จ)**, **Whole-Document Save พร้อม Full Diff**, **ระบบตรวจจับข้อเท็จจริงขัดแย้ง (Contradiction & Conflict Detector)**, **ระบบตรวจสอบความเที่ยงตรงของการอ้างอิง (Citation Faithfulness Engine)**, และ **ห้องทดลองกฎ AI (Rules Simulator)**
+เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **CogniNest** ฉบับปรับปรุง เพื่อรองรับ **ระบบ Shared Temp Draft State**, **การล็อกระดับ Cell ในตาราง**, **3-Tab Save & Selective Staging Engine**, **สถาปัตยกรรม Canonical Term Standardization**, และ **การตรวจจับ Conflict ใน 2 จังหวะ (On Generate & On Save)**
 
 ---
 
-## 1. ผังสถาปัตยกรรมการล็อกระดับบล็อกและการเผยแพร่ผลลัพธ์ (Block Lock & Reveal Architecture)
+## 1. สถาปัตยกรรม Shared Temp Draft State (รีเฟรชไม่หาย)
+
+เพื่อรองรับการแก้ไขที่บันทึกชั่วคราวให้ทุกคนในห้องเห็นตรงกันและไม่สูญหายเมื่อรีเฟรช:
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │ CLIENT (Next.js 15)                                    │
-│ 1. Focus หรือสั่ง AI แก้บล็อก <p id="p-002">           │
-│ 2. ส่ง WS: acquire_block_lock(actor="User A")          │
-│ 3. พิมพ์ข้อความใน Local State (ไม่ส่งตัวหนังสือวิ่งสด)  │
-│ 4. ส่ง ping_lock_heartbeat ทุก 15 วินาที               │
+│ 1. แก้ไขบล็อกหรือเซลล์เสร็จ -> คลิกออก (Unfocus)       │
+│ 2. ส่ง WS: `release_and_reveal_block`                  │
 └───────────────────────────┬────────────────────────────┘
                             │ WebSocket
                             ▼
 ┌────────────────────────────────────────────────────────┐
-│ WEBSOCKET PRESENCE GATEWAY (FastAPI)                   │
-│ 1. บันทึกลง Redis:                                     │
-│    Key: "lock:{res_id}:{anchor_id}"                    │
-│    Val: { "actor": "User A", "heartbeat_at": "..." }   │
-│    TTL: 60 วินาที                                      │
-│ 2. บรอดแคสต์หาเพื่อนร่วมทีม:                            │
-│    `block_locked` (แสดงป้าย: กำลังแก้ไขโดย User A)      │
-│ 3. เมื่อ User A พิมพ์เสร็จ (Unfocus / Blur):           │
-│    ➔ Client ส่ง WS: `release_and_reveal_block`         │
-│    ➔ ลบ Key ใน Redis                                   │
-│    ➔ บรอดแคสต์ `block_updated`: ส่งข้อความใหม่ให้       │
-│      ทุกคนในห้องเห็นพร้อมกันทันที                      │
+│ FASTAPI & POSTGRESQL SHARED TEMP STORE                 │
+│ 1. บันทึกเข้าตาราง `resource_temp_drafts`:             │
+│    { resource_id, anchor_id, temp_html, updated_by }   │
+│ 2. อัปเดต Cache ใน Redis เพื่อให้ดึงข้อมูลเร็วระดับ ms  │
+│ 3. บรอดแคสต์ `block_updated_temp` หาเพื่อนร่วมทีม       │
 └────────────────────────────────────────────────────────┘
 ```
+* **Persistence Guarantee:** เมื่อผู้ใช้คนใดรีเฟรชหน้าเว็บ หรือปิดแล้วเปิดใหม่ ระบบจะดึงเนื้อหาจาก `resource_temp_drafts` มาทับเวอร์ชันทางการ ทำให้เนื้อหาล่าสุดไม่สูญหาย
 
 ---
 
-## 2. สถาปัตยกรรมการบันทึกเอกสารทั้งฉบับ (Whole-Document Save & Diff Engine)
-
-1. เมื่อผู้ใช้แก้ไขบล็อกต่างๆ เสร็จสมบูรณ์แล้ว เนื้อหาใหม่จะแสดงอยู่บนหน้าจอ
-2. ผู้ใช้กดปุ่ม **"💾 บันทึกเอกสาร (Save Resource)"**:
-   - Client ยิง API ขอพรีวิว Diff เทียบเนื้อหาทั้งเอกสารกับเวอร์ชันเดิมในฐานข้อมูล
-   - แสดงผลใน Modal ให้ตรวจทานก่อน Commit
-3. เมื่อกดยืนยัน:
-   - บันทึกเวอร์ชันใหม่ลง `resources` และ `resource_versions`
-   - **ทริกเกอร์ Background Job ทันที:** รัน Incremental Delta Sync (วิเคราะห์เฉพาะส่วนต่างที่แก้) และรัน Contradiction Detector
-
----
-
-## 3. สถาปัตยกรรมตรวจจับข้อเท็จจริงขัดแย้ง (Contradiction & Conflict Detection Engine)
-
-ทำงานอัตโนมัติใน Background Job ทันทีหลังจากการบันทึกเอกสาร:
+## 2. สถาปัตยกรรมการล็อกระดับเซลล์ในตาราง (Cell-Level Table Locking)
 
 ```
-[ข้อความใหม่ที่ถูกบันทึกใน Resource A]
-                  │
-                  ▼
-[1. Claim & Fact Extractor (LLM)]
-สกัดประโยคที่เป็นข้อเท็จจริงสำคัญ (Claims)
-เช่น: {"subject": "payment_term", "predicate": "is", "object": "60 days"}
-                  │
-                  ▼
-[2. Vector Similarity Search for Cross-Claims]
-ค้นหาประโยคที่มีความหมายใกล้เคียงใน Resource อื่นๆ (Resource B, C, D)
-                  │
-                  ▼
-[3. Natural Language Inference (NLI) Verifier]
-ส่งข้อเท็จจริงคู่ขนานเข้าตรวจสอบ:
-- Premise: "ระยะเวลาชำระเงิน 30 วัน" (Resource B)
-- Hypothesis: "ระยะเวลาชำระเงิน 60 วัน" (Resource A)
-- ผลลัพธ์: CONTRADICTION (ขัดแย้งกัน)
-                  │
-                  ▼
-[4. บันทึกลงตาราง `knowledge_conflicts`]
-ส่งสัญญาณแจ้งเตือนผ่าน WebSocket สู่หน้าจอ Knowledge Hub
+[ผู้ใช้คลิกพิมพ์ที่ตาราง เซลล์ Row 3, Col 2]
+                     │
+                     ▼
+[WebSocket ส่ง: acquire_cell_lock(res_id, "row-03:col-02")]
+                     │
+                     ▼
+┌────────────────────────────────────────────────────────┐
+│ REDIS CELL LOCK KEY                                    │
+│ Key: "lock:{res_id}:row-03:col-02"                     │
+│ TTL: 60 วินาที (ต่ออายุด้วย Heartbeat ทุก 15 วินาที)   │
+└────────────────────────────────────────────────────────┘
+                     │
+    ➔ คนอื่นสามารถเข้าแก้ เซลล์ Row 3, Col 1 หรือแถวอื่นได้ตามปกติ
 ```
 
 ---
 
-## 4. สถาปัตยกรรมตรวจสอบความเที่ยงตรงของการอ้างอิง (Citation Faithfulness Engine)
+## 3. สถาปัตยกรรม 3-Tab Save & Selective Staging Controller
 
-เพื่อให้คำตอบของ AI ใน Private Chat ไร้การบิดเบือนข้อเท็จจริง (Anti-Hallucination):
-1. **Semantic Entailment Checking:** เมื่อ LLM ตอบประโยคที่อ้างอิง `[Ref: doc #p-14]` ระบบ Background Token Evaluator จะนำข้อความในประโยคนั้นเทียบกับ Chunk ต้นฉบับในย่อหน้า p-14
-2. **Faithfulness Score:** หากค่าความเที่ยงตรงสูงกว่า 0.85 ระบบจะติดป้ายยืนยัน `✓` สีเขียว
-3. **Hover Grounding Card:** ส่งประโยคต้นฉบับที่ตรงกันไปแสดงใน Popover เพื่อให้ผู้ใช้อ่านตรวจทานได้ทันทีโดยไม่ต้องคลิกเปิดไฟล์
+1. เมื่อผู้ใช้กดปุ่ม Save Resource:
+   - Controller รัน Diff เทียบระหว่าง `resource_temp_drafts` กับ `resources` (เวอร์ชันทางการล่าสุด)
+   - คำนวณสถิติคำ (`+words`, `-words`)
+   - **รัน Contradiction Detector ล่วงหน้า** เพื่อนำผลการตรวจจับส่งไปแสดงใน **แท็บที่ 3 (หมายเหตุ & ข้อขัดแย้ง)**
+2. เมื่อผู้ใช้ส่งคำขอยืนยันบันทึก:
+   - บล็อกที่ถูกติ๊ก `[✓]`: นำเนื้อหาเขียนทับลง `resources` และสร้างเวอร์ชันใหม่ใน `resource_versions` แล้วลบออกจาก `resource_temp_drafts`
+   - บล็อกที่ไม่ถูกติ๊ก `[ ]`: คงไว้ใน `resource_temp_drafts` ต่อไป
+   - ทริกเกอร์ **Incremental Delta Sync** เฉพาะบล็อกที่ถูก Commit ทันที!
 
 ---
 
-## 5. สถาปัตยกรรมห้องทดลองกฎ AI (Project Rules Simulator / Sandbox)
+## 4. สถาปัตยกรรมจัดระเบียบคำศัพท์มาตรฐาน (Canonical Term Standardization Engine)
 
-* **Isolated Sandbox Context:** สร้าง Session จำลองชั่วคราว ไม่บันทึกลงประวัติแชทจริง
-* **Prompt Compilation Pipeline:**
-  - ดึง Active Rules ทั้งหมดมาจัดเรียงตามลำดับความสำคัญ (System Constraints -> Don'ts -> Do's -> Persona)
-  - นำส่งเข้า LLM พร้อมคำถามทดสอบ
-* **Compliance Auditor:** ตรวจสอบคำตอบของ AI ว่ามีคำหรือรูปแบบที่ฝ่าฝืนกฎ Don'ts หรือไม่ ก่อนส่งผลลัพธ์กลับให้ผู้ใช้ดูในหน้าจอ
+ลดความซ้ำซ้อนของคำที่มีความหมายเดียวกัน:
+
+```mermaid
+flowchart LR
+    A[ข้อความใหม่: 'K8s', 'Kubernetes Cluster'] --> B[Synonym & Acronym Normalizer]
+    B --> C[LLM Semantic Embedding Matcher]
+    C --> D{ตรงกับคำหลักเดิมใน Living Glossary หรือไม่?}
+    
+    D -- มีคำหลักอยู่แล้ว -- --> E[ผูกเป็น Alias ใต้ Canonical Term: 'Kubernetes']
+    D -- เป็นแนวคิดใหม่ -- --> F[สร้างเป็น Canonical Term ใหม่]
+    
+    E --> G[ใน Knowledge Graph แสดงโหนดเดียว: 'Kubernetes']
+    F --> G
+```
+
+---
+
+## 5. สถาปัตยกรรมตัวค้นหาช่องว่างความรู้ (Knowledge Gap Finder Engine)
+
+* ระบบรันการวิเคราะห์ Graph Connectivity และ Entity Mention Counts:
+  - ดึงคำศัพท์ที่ถูกกล่าวถึงใน Resource Chunks ซ้ำๆ (`frequency >= 3`)
+  - ตรวจสอบว่ามีโหนดใน Graph หรือเอกสารใดที่ให้นิยามความหมายโดยตรงหรือไม่
+  - หากไม่มี ➔ บันทึกเป็น **Knowledge Gap Item** พร้อมปุ่มสั่ง AI ให้ช่วยร่างเอกสารปิดช่องว่างทันที

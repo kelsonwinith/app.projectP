@@ -2,32 +2,31 @@
 ### Universal Multi-Format AI Knowledge & Block-Locked Collaborative Resource OS
 
 > **Next-generation Source-Grounded Multi-Modal Knowledge Engine & Living Collaborative Workspace**  
-> ผสานแนวคิดของ NotebookLM เข้ากับโครงสร้าง Shared Resource, Block-Level Exclusive Locking พร้อมระบุตัวตนผู้ล็อก (Private Typing -> Broadcast เมื่อเสร็จ), Whole-Document Save with Full Diff Modal, Save-Triggered Incremental Knowledge Sync & Contradiction Detector, Citation Faithfulness Check, และ Rules Simulator
+> ผสานแนวคิดของ NotebookLM เข้ากับโครงสร้าง Shared Resource, Cell-Level Table Locking, Shared Temp Draft State (รีเฟรชไม่หาย), 3-Tab Save Modal (ก่อนแก้ / หลังแก้ / หมายเหตุ & Conflict), Canonical Term Standardization, Knowledge Gap Finder, และ TOC ScrollSpy
 
 ---
 
 ## 📌 สรุปภาพรวมโปรเจกต์ (Executive Summary)
 
-**CogniNest** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user ที่ให้ความสำคัญกับ **ความถูกต้องของข้อมูล (Data Integrity)**, **ประสบการณ์การแก้ไขร่วมกันที่ไม่สับสน (Isolated Block Drafting)**, และ **การตรวจทานก่อนบันทึกจริง (Diff Review before Commit)**:
+**CogniNest** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user ที่ให้ความสำคัญกับ **ความถูกต้องของข้อมูล (Data Integrity)**, **ระบบดราฟต์ชั่วคราวร่วมกัน (Shared Temp State)**, **การตรวจทานก่อนบันทึกแบบ 3 แท็บ**, และ **การจัดระเบียบคำศัพท์มาตรฐานไร้ความซ้ำซ้อน**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                      REAL-TIME COLLABORATIVE SHARED WORKSPACE                          │
 ├───────────────────────────────────────────┬────────────────────────────────────────────┤
 │               📂 RESOURCE                 │                🧠 KNOWLEDGE                │
-│       (Block-Locked Editing + Audit Log)  │       (องค์ความรู้ที่ AI ตกผลึกร่วมกัน)      │
+│       (Block/Cell-Locked + Shared Temp)   │       (องค์ความรู้ที่ AI ตกผลึกร่วมกัน)      │
 ├───────────────────────────────────────────┼────────────────────────────────────────────┤
-│ • Universal Multi-Format Editable Viewers │ • Living Project Glossary (Tag-based Poly) │
-│ • Block-Level Exclusive Locking:          │ • Smart Filtered Knowledge Graph (5 เลเยอร์│
-│   - ใคร/AI Agent กำลังแก้ บล็อกนั้นจะ Lock│ • Save-Triggered Delta Sync:               │
-│   - แสดงป้ายระบุชัดเจนว่าใครกำลังแก้ไข     │   - บันทึก Resource ปุ๊บ -> Background     │
-│   - พิมพ์แบบส่วนตัว (ไม่แสดง Real-time)   │     Job ซิงค์ความรู้ให้ทันที               │
-│   - เมื่อพิมพ์เสร็จ -> แสดงผลใหม่ให้ทุกคน │ • ⚠️ Contradiction & Conflict Detector:    │
-│     เห็นทันที                             │   - AI ตรวจจับข้อเท็จจริงขัดแย้งระหว่างไฟล์│
-│ • Full Document Save with Diff Modal:     │   - แจ้งเตือนคู่ไฟล์ที่ข้อมูลไม่ตรงกันทันที │
-│   - กด Save Resource -> พรีวิว Diff ทั่ว   │ • Living Summaries & Verified Fact Base    │
-│     เอกสารก่อนกดยืนยันบันทึกจริง          │                                            │
-│ • Full Audit Trail & Version History      │                                            │
+│ • Universal Multi-Format Viewers:         │ • Canonical Living Glossary:               │
+│   - Document: Dynamic TOC + ScrollSpy     │   - รวมคำพ้อง/คำย่อเป็น 'คำหลักมาตรฐาน'     │
+│   - Presentation: Grid Sorter View        │   - ตัดความซ้ำซ้อนของคำความหมายเดียวกัน     │
+│   - Table: Granular Cell-Level Locking    │ • Smart Filtered Knowledge Graph (5 เลเยอร์│
+│   - Split Mode: WYSIWYG vs Raw Markdown   │ • Knowledge Gap & Orphan Concept Finder:   │
+│ • Shared Temp Draft (รีเฟรชไม่หาย):       │   - ค้นหาประเด็นที่ยังขาดเอกสารอธิบาย       │
+│   - แก้ไขแล้วบันทึกเป็น Temp ให้ทุกคนเห็น │ • 3-Tab Save & Conflict Modal:             │
+│   - ย้อนค่าเฉพาะบล็อกได้ (Revert Block)   │   [แท็บ 1: ก่อนแก้ไข] | [แท็บ 2: หลังแก้]  │
+│ • Selective Save (ติ๊กเลือกบล็อกที่จะ Commit)│   [แท็บ 3: หมายเหตุ & ตรวจจับข้อขัดแย้ง]    │
+│ • Full Audit Trail & Version History      │ • Incremental Delta Knowledge Sync         │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
                                           │
                                           ▼
@@ -42,20 +41,28 @@
 
 ---
 
-## 🌟 วงจรการแก้ไขและการบันทึกที่ชัดเจน (Editing & Save Flow)
+## 🌟 10 ฟังก์ชันเด่นที่ขัดเกลาจนสมบูรณ์แบบ
 
-1. **การล็อกระดับบล็อกและความเป็นส่วนตัว (Block Locking & Isolated Typing):**
-   - เมื่อ User A หรือ AI Agent ของ User A เริ่มแก้ไขบล็อกใด บล็อกนั้นจะถูก **Lock ทันที**
-   - สมาชิกคนอื่นจะเห็นป้ายระบุชัดเจนว่า *"บล็อกนี้กำลังถูกแก้ไขโดย [ชื่อ User / AI Agent]"* และไม่สามารถกดเข้าแก้ซ้อนได้
-   - **ไม่แสดงผลตัวหนังสือแบบ Real-time:** เนื้อหาที่กำลังพิมพ์จะถูกแยกเก็บเป็นร่างส่วนตัว เพื่อไม่ให้ตัวหนังสือวิ่งรบกวนสายตาผู้อื่น
-   - **แสดงผลใหม่ทันทีเมื่อพิมพ์เสร็จ:** ทันทีที่ User A พิมพ์เสร็จ (คลิกออกจากบล็อก) หรือ AI Agent ร่างเสร็จ บล็อกนั้นจะ **แสดงผลข้อความใหม่ให้ทุกคนในห้องเห็นพร้อมกันทันที**
-2. **การบันทึกเอกสารทั้งฉบับ (Save Resource with Diff Modal):**
-   - เมื่อแก้ไขเนื้อหาในบล็อกต่างๆ เรียบร้อยแล้ว ผู้ใช้กดปุ่ม **"💾 บันทึกเอกสาร (Save Resource)"**
-   - ระบบแสดงหน้าต่าง **Document Diff Modal** เปรียบเทียบข้อความเดิม (สีแดง) กับข้อความใหม่ (สีเขียว) ทั้งเอกสารอย่างชัดเจน
-   - ผู้ใช้ตรวจทานและกรอกบันทึกย่อ (Commit Message) แล้วกดยืนยันบันทึก
-3. **ซิงค์ความรู้และตรวจจับ Conflict อัตโนมัติ (Immediate Delta Sync & Conflict Check):**
-   - ทันทีที่ยืนยันบันทึก ระบบจะส่งงานเข้า Background Job รันการซิงค์ความรู้เฉพาะส่วนต่าง (Incremental Delta Sync) อัปเดต Living Glossary และ Knowledge Graph
-   - รัน **Contradiction & Conflict Detector** หากพบข้อมูลขัดแย้งกับเอกสารอื่นในโปรเจกต์ จะขึ้นการ์ดแจ้งเตือน Conflict Alert ใน Knowledge Hub ทันที
+1. **Auto TOC with ScrollSpy & Viewer Enhancements:**
+   - หน้ารีดเดอร์มีสารบัญด้านข้างเลื่อนตามการอ่านจริง (ScrollSpy)
+   - หน้า Presentation มี **Slide Grid Sorter Mode** ดูภาพรวมทุกสไลด์พร้อมกัน
+   - สลับโหมดอ่าน/เขียนได้ระหว่าง **WYSIWYG** และ **Raw Markdown**
+2. **Cell-Level Table Locking (ล็อกเฉพาะเซลล์ในตาราง):**
+   - ใน Table/Spreadsheet ล็อกเฉพาะ Cell หรือ Row ที่กำลังแก้ เพื่อนร่วมทีมแก้ไขคนละเซลล์ในตารางเดียวกันได้พร้อมกัน
+3. **Shared Temp Draft State (แก้ไขแล้วรีเฟรชไม่หาย):**
+   - เมื่อพิมพ์แก้ไขบล็อกเสร็จ ข้อมูลจะถูกบันทึกเป็น **Temp State** ในระบบทันที ทุกคนในทีมเห็นตรงกัน และแม้จะรีเฟรชเบราว์เซอร์ข้อมูลก็ไม่สูญหาย
+   - มีปุ่ม **"Revert Block"** ย้อนข้อความเฉพาะบล็อกนั้นกลับสู่เวอร์ชันเซฟล่าสุดได้
+4. **3-Tab Save Modal พร้อมสถิติ Diff และระบบเลือก Commit (Selective Staging):**
+   - เมื่อกด Save Resource จะเปิดหน้าต่าง 3 แท็บ:
+     - **แท็บ 1: ก่อนแก้ไข (Original)**
+     - **แท็บ 2: หลังแก้ไข (Proposed with Diff)** พร้อมแถบสถิติคำ และ Checkbox ให้ติ๊กเลือกเฉพาะบล็อกที่ต้องการบันทึกจริง (บล็อกที่ไม่ติ๊กจะคงสถานะ Temp ต่อไป)
+     - **แท็บ 3: หมายเหตุ & ข้อขัดแย้ง (Notes & Conflicts)** แสดงข้อเท็จจริงขัดแย้งที่ AI ตรวจพบก่อนกดยืนยัน
+5. **Conflict Detection ตอน Save และตอน Generate:**
+   - ระบบตรวจจับข้อเท็จจริงขัดแย้งจะทำงาน 2 จังหวะ: **ตอน AI ร่างเอกสารใหม่ (Generate Resource)** และ **ตอนกด Save Resource** พร้อมแสดงเตือนในแท็บที่ 3 ทันที
+6. **Canonical Term Standardization ใน Living Glossary:**
+   - ยุบรวมคำพ้องและคำย่อ (เช่น Kubernetes, K8s) ให้เหลือ **"คำหลักมาตรฐาน (Canonical Term)"** เพียงคำเดียว เพื่อลดความซ้ำซ้อนของแนวคิด
+7. **Knowledge Gap / Orphan Concept Finder:**
+   - ตัวกรองตรวจจับแนวคิดที่ถูกกล่าวถึงในเอกสาร แต่ยังไม่มีเอกสารใดให้คำนิยามหรือเขียนอธิบายอย่างเป็นทางการ ช่วยชี้เป้าเนื้อหาที่ทีมต้องเขียนเพิ่ม
 
 ---
 
@@ -63,9 +70,9 @@
 
 | เอกสาร | รายละเอียด |
 | :--- | :--- |
-| **[01_PRD.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/01_PRD.md)** | Product Requirements: Block Lock Lifecycle (Lock -> Private Type -> Reveal upon finish -> Save Resource Diff) |
-| **[02_USER_JOURNEY_AND_FLOWS.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/02_USER_JOURNEY_AND_FLOWS.md)** | Sequence Flows: การแสดงป้าย Lock, การปล่อยผลลัพธ์ใหม่ทันทีที่พิมพ์เสร็จ, โฟลว์ Save Resource พร้อม Diff |
-| **[03_SYSTEM_ARCHITECTURE.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/03_SYSTEM_ARCHITECTURE.md)** | Technical Architecture: Redis Block Lock, WebSocket Event Dispatcher, Save & Conflict Pipeline |
-| **[04_DATA_SCHEMA.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/04_DATA_SCHEMA.md)** | Database Schema: ตาราง `knowledge_conflicts`, `resource_versions`, `resource_audit_logs` |
-| **[05_API_SPECIFICATION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/05_API_SPECIFICATION.md)** | APIs: WebSocket Block Lock / Reveal Event, Diff Preview, Save Confirmed, Conflicts API |
+| **[01_PRD.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/01_PRD.md)** | Product Requirements ฉบับสมบูรณ์: Cell Locking, Shared Temp State, 3-Tab Save, Canonical Glossary |
+| **[02_USER_JOURNEY_AND_FLOWS.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/02_USER_JOURNEY_AND_FLOWS.md)** | Sequence Flows: Shared Temp Flow, 3-Tab Save Modal, Conflict Checking on Generate/Save |
+| **[03_SYSTEM_ARCHITECTURE.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/03_SYSTEM_ARCHITECTURE.md)** | Technical Architecture: Temp Draft State Engine, Canonical Term Reducer, Conflict Detection Engine |
+| **[04_DATA_SCHEMA.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/04_DATA_SCHEMA.md)** | Database Schema: เพิ่มฟิลด์ `canonical_term_id`, ตาราง `resource_temp_drafts`, `knowledge_conflicts` |
+| **[05_API_SPECIFICATION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/05_API_SPECIFICATION.md)** | APIs: Temp Draft Sync, 3-Tab Save API, Selective Block Commit, Canonical Glossary API |
 | **[06_IMPLEMENTATION_ROADMAP.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/06_IMPLEMENTATION_ROADMAP.md)** | แผนงานพัฒนาตามลำดับความสำคัญ 4 ระยะ |

@@ -1,6 +1,6 @@
 # PostgreSQL Database Schema & Data Models 🗄️
 
-เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **ตารางแจ้งเตือนข้อเท็จจริงขัดแย้ง (Knowledge Conflicts)**, **Whole-Document Save & Version History**, **Incremental Delta Sync**, และ **Tag-Based Living Glossary**
+เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **ตาราง Shared Temp Drafts (รีเฟรชไม่หาย)**, **Canonical Living Glossary (ลดความซ้ำซ้อนของคำศัพท์)**, **ตารางตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts)**, และ **Full Version History**
 
 ---
 
@@ -15,14 +15,15 @@ erDiagram
     USERS ||--o{ RESOURCE_VERSIONS : "commits"
     USERS ||--o{ RESOURCE_AUDIT_LOGS : "acts"
     USERS ||--o{ PENDING_AI_PROPOSALS : "reviews"
+    USERS ||--o{ RESOURCE_TEMP_DRAFTS : "edits temp"
     USERS ||--o{ KNOWLEDGE_CONFLICTS : "resolves"
     
     PROJECTS ||--o{ PROJECT_MEMBERS : "has members"
     PROJECTS ||--o{ FOLDERS : "shared folders"
     PROJECTS ||--o{ RESOURCES : "shared multi-format resources"
     PROJECTS ||--o{ PROJECT_RULES : "governed by rules"
-    PROJECTS ||--o{ PROJECT_GLOSSARIES : "shared living glossary (tagged)"
-    PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes (filterable)"
+    PROJECTS ||--o{ PROJECT_GLOSSARIES : "canonical living glossary"
+    PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes"
     PROJECTS ||--o{ KNOWLEDGE_GRAPH_EDGES : "shared graph edges"
     PROJECTS ||--o{ KNOWLEDGE_SYNTHESES : "shared summaries"
     PROJECTS ||--o{ KNOWLEDGE_CONFLICTS : "tracks source contradictions"
@@ -36,9 +37,12 @@ erDiagram
     RESOURCES ||--o{ USER_ANNOTATIONS : "annotated on"
     RESOURCES ||--o{ RESOURCE_VERSIONS : "versioned into"
     RESOURCES ||--o{ RESOURCE_AUDIT_LOGS : "audited by"
+    RESOURCES ||--o{ RESOURCE_TEMP_DRAFTS : "has temp blocks"
     RESOURCES ||--o{ PENDING_AI_PROPOSALS : "has proposals"
     RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in A"
     RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in B"
+    
+    PROJECT_GLOSSARIES ||--o{ PROJECT_GLOSSARIES : "canonical parent (canonical_id)"
     
     KNOWLEDGE_GRAPH_NODES ||--o{ KNOWLEDGE_GRAPH_EDGES : "source"
     KNOWLEDGE_GRAPH_NODES ||--o{ KNOWLEDGE_GRAPH_EDGES : "target"
@@ -50,20 +54,67 @@ erDiagram
 
 ## 2. นิยามโครงสร้างตาราง (DDL & Table Specifications)
 
-### 2.1 ตารางตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts Table)
+### 2.1 ตารางจัดการดราฟต์ชั่วคราว (Shared Temp Drafts Table)
 
-#### `knowledge_conflicts` (บันทึกข้อเท็จจริงที่ขัดแย้งกันข้ามเอกสาร)
+#### `resource_temp_drafts` (เก็บเนื้อหาที่แก้ไขแล้วแต่ยังไม่ได้ Commit เป็นเวอร์ชันถาวร)
+```sql
+CREATE TABLE resource_temp_drafts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    anchor_id VARCHAR(100) NOT NULL,         -- ย่อหน้า หรือ เซลล์ตาราง เช่น "p-002", "row-03:col-02"
+    temp_html TEXT NOT NULL,                 -- เนื้อหาใหม่ที่ทุกคนในห้องเห็นตรงกัน
+    temp_raw_text TEXT NOT NULL,
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (resource_id, anchor_id)          -- 1 บล็อกมี 1 ดราฟต์ชั่วคราวเท่านั้น
+);
+
+CREATE INDEX idx_temp_drafts_resource ON resource_temp_drafts(resource_id);
+```
+
+---
+
+### 2.2 ตาราง Living Glossary แบบ Canonical Term (ลดความซ้ำซ้อน)
+
+#### `project_glossaries`
+```sql
+CREATE TABLE project_glossaries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    term VARCHAR(150) NOT NULL,
+    canonical_id UUID REFERENCES project_glossaries(id) ON DELETE CASCADE, -- ชี้หาคำหลักมาตรฐาน
+    is_canonical BOOLEAN DEFAULT TRUE,       -- True = เป็นคำหลัก, False = เป็นคำพ้อง/คำย่อ
+    tag VARCHAR(50) NOT NULL DEFAULT 'General',
+    aliases TEXT[] DEFAULT '{}',
+    definition TEXT NOT NULL,
+    source_resource_ids UUID[] DEFAULT '{}',
+    is_ai_generated BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, term, tag)
+);
+
+CREATE INDEX idx_glossary_term_tag ON project_glossaries(project_id, term, tag);
+CREATE INDEX idx_glossary_canonical ON project_glossaries(canonical_id);
+```
+
+---
+
+### 2.3 ตารางตรวจจับข้อขัดแย้ง และติดตามสถานะความรู้
+
+#### `knowledge_conflicts`
 ```sql
 CREATE TABLE knowledge_conflicts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     source_resource_a_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
     source_resource_b_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
-    anchor_a_id VARCHAR(100) NOT NULL,       -- พิกัดย่อหน้า/สไลด์ของเอกสาร A
-    anchor_b_id VARCHAR(100) NOT NULL,       -- พิกัดย่อหน้า/สไลด์ของเอกสาร B
-    statement_a TEXT NOT NULL,               -- ข้อความหรือตัวเลขในเอกสาร A
-    statement_b TEXT NOT NULL,               -- ข้อความหรือตัวเลขในเอกสาร B
-    conflict_description TEXT NOT NULL,      -- คำอธิบายความขัดแย้งที่ AI วิเคราะห์ได้
+    anchor_a_id VARCHAR(100) NOT NULL,
+    anchor_b_id VARCHAR(100) NOT NULL,
+    statement_a TEXT NOT NULL,
+    statement_b TEXT NOT NULL,
+    conflict_description TEXT NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'unresolved'
         CHECK (status IN ('unresolved', 'acknowledged', 'resolved')),
     resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -73,10 +124,6 @@ CREATE TABLE knowledge_conflicts (
 
 CREATE INDEX idx_conflicts_project ON knowledge_conflicts(project_id, status);
 ```
-
----
-
-### 2.2 ตารางติดตามการซิงค์แบบ Delta Sync
 
 #### `project_knowledge_sync_states`
 ```sql
@@ -90,13 +137,11 @@ CREATE TABLE project_knowledge_sync_states (
     sync_progress_percent INT DEFAULT 100,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX idx_sync_state_project ON project_knowledge_sync_states(project_id);
 ```
 
 ---
 
-### 2.3 ตารางโครงสร้างหลัก (Resources, Versions & Audit Logs)
+### 2.4 ตารางโครงสร้างหลัก (Resources, Versions & Audit Logs)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -232,27 +277,6 @@ CREATE TABLE user_annotations (
     personal_note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-### 2.4 ตาราง Knowledge Hub, Rules และ Chat
-
-```sql
-CREATE TABLE project_glossaries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    term VARCHAR(150) NOT NULL,
-    tag VARCHAR(50) NOT NULL DEFAULT 'General',
-    aliases TEXT[] DEFAULT '{}',
-    definition TEXT NOT NULL,
-    source_resource_ids UUID[] DEFAULT '{}',
-    is_ai_generated BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, term, tag)
 );
 
 CREATE TABLE knowledge_graph_nodes (
