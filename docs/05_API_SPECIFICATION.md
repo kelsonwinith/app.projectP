@@ -1,186 +1,132 @@
 # RESTful & Streaming API Specification 🔌
 
-เอกสารฉบับนี้กำหนดสเปกของ API สำหรับ **FastAPI Backend** เพื่อให้ **Next.js Frontend** เชื่อมต่อการทำงานได้อย่างราบรื่น รองรับทั้ง JSON REST endpoints, Multipart File Uploads และ Server-Sent Events (SSE) สำหรับ AI Streaming
+เอกสารฉบับนี้กำหนดสเปกของ API สำหรับ **FastAPI Backend** เพื่อให้ **Next.js Frontend** เชื่อมต่อการทำงานได้อย่างสมบูรณ์แบบ ครอบคลุมระบบบันทึกแบบกดยืนยัน (Explicit Save), การตรวจทานข้อเสนอจาก AI (AI Proposal Diff Review), ประวัติเวอร์ชันและ Audit Log, และ WebSocket สำหรับ Real-time Presence
 
 ---
 
 ## 1. ข้อมูลพื้นฐาน (Base URL & Headers)
 * **Base URL:** `/api/v1`
-* **Authentication:** Bearer Token (JWT) ส่งผ่าน Header `Authorization: Bearer <token>`
-* **Content-Type:** `application/json` (ยกเว้น File Upload ใช้ `multipart/form-data`)
+* **WebSocket URL:** `ws://api.domain.com/ws`
+* **Authentication:** Bearer Token (JWT) ส่งผ่าน Header `Authorization: Bearer <token>` หรือ Query Param สำหรับ WebSocket
 
 ---
 
-## 2. กลุ่ม API: การจัดการโปรเจกต์และโฟลเดอร์ (Projects & Folders)
+## 2. กลุ่ม API: การแก้ไข การบันทึก และการตรวจสอบ (Editing, Save & Audit)
 
-### 2.1 สร้างและดึงข้อมูลโปรเจกต์
-* **`GET /api/v1/projects`**
-  - ดึงรายการโปรเจกต์ทั้งหมดที่ผู้ใช้เป็นเจ้าของหรือสมาชิก
-* **`POST /api/v1/projects`**
-  - สร้างโปรเจกต์ใหม่ (เริ่มต้นด้วยความว่างเปล่า: Resource 0, Knowledge 0)
-  - **Body:**
+### 2.1 บันทึกการแก้ไขแบบกดยืนยัน (Explicit Save & Commit)
+* **`PUT /api/v1/projects/{project_id}/resources/{resource_id}/save-confirmed`**
+  - บันทึกการเปลี่ยนแปลงจาก In-place Editor โดยต้องมี Commit Message เสมอ
+  - ทริกเกอร์ Background Job เพื่อ Sync Knowledge Hub อัตโนมัติ
+  - **Request Body:**
     ```json
     {
-      "name": "AI Oncology Research",
-      "description": "การศึกษาโมเดลวิเคราะห์มะเร็ง",
-      "domain_metadata": { "domain": "healthcare", "language": "th" }
+      "semantic_html": "<article><p id='p-001'>ข้อความที่แก้ไขใหม่...</p></article>",
+      "raw_text": "ข้อความที่แก้ไขใหม่...",
+      "commit_message": "แก้ไขส่วนบทนำและอัปเดตสถิติล่าสุด"
     }
     ```
-* **`GET /api/v1/projects/{project_id}`**
-  - ดึงรายละเอียดโปรเจกต์, จำนวน Resource, สถิติของ Knowledge Graph และ Glossary
-
-### 2.2 การจัดการโครงสร้างโฟลเดอร์ (Folder Hierarchy)
-* **`GET /api/v1/projects/{project_id}/folders/tree`**
-  - ดึงโครงสร้างโฟลเดอร์ทั้งหมดแบบ Nested Tree Hierarchy พร้อมจำนวนไฟล์ในแต่ละโฟลเดอร์
-* **`POST /api/v1/projects/{project_id}/folders`**
-  - สร้างโฟลเดอร์ใหม่ (กำหนด `parent_id` เป็น null สำหรับ Root หรือระบุ UUID สำหรับ Sub-folder)
-* **`PATCH /api/v1/projects/{project_id}/folders/{folder_id}`**
-  - ย้ายโฟลเดอร์ หรือเปลี่ยนชื่อ
-
----
-
-## 3. กลุ่ม API: ทรัพยากรและการนำเข้า (Resources & Ingestion)
-
-### 3.1 อัปโหลดไฟล์เอกสาร (DOCX, PDF, TXT, MD)
-* **`POST /api/v1/projects/{project_id}/resources/upload`**
-  - **Content-Type:** `multipart/form-data`
-  - **Form Data:**
-    - `file`: ไฟล์ไบนารี (`.docx`, `.pdf`, `.txt`, `.md`)
-    - `folder_id`: UUID ของโฟลเดอร์ปลายทาง (Optional)
-  - **Response (202 Accepted):**
+  - **Response (200 OK):**
     ```json
     {
       "resource_id": "8fa21e64-...",
-      "status": "pending",
-      "message": "File received. Background ingestion job queued."
+      "current_version": 2,
+      "message": "Resource saved and version 2 committed. Knowledge sync job enqueued."
     }
     ```
 
-### 3.2 นำเข้าผ่าน URL (Web Scrape)
-* **`POST /api/v1/projects/{project_id}/resources/url`**
-  - **Body:**
+### 2.2 การตรวจทานข้อเสนอแนะจาก AI (Human-in-the-Loop Proposal Review)
+* **`POST /api/v1/projects/{project_id}/resources/{resource_id}/proposals/{proposal_id}/accept`**
+  - ผู้ใช้เจ้าของ AI กดยอมรับการแก้ไขของ AI นำผลลัพธ์บันทึกลง Resource ทันที
+  - **Response (200 OK):**
     ```json
     {
-      "url": "https://example.com/research-paper",
-      "folder_id": "Optional UUID"
+      "status": "accepted",
+      "new_version": 3,
+      "audit_log_id": "uuid-audit-123"
     }
     ```
+* **`POST /api/v1/projects/{project_id}/resources/{resource_id}/proposals/{proposal_id}/reject`**
+  - ผู้ใช้ปฏิเสธข้อเสนอแนะของ AI คืนค่าเนื้อหาดั้งเดิม
 
-### 3.3 เรียกดูเนื้อหาเอกสาร (Semantic HTML Reader View)
-* **`GET /api/v1/projects/{project_id}/resources/{resource_id}`**
-  - ส่งกลับข้อมูลสำหรับเรนเดอร์ใน Reader Mode:
-  - **Response:**
+### 2.3 ประวัติเวอร์ชันและบันทึกการตรวจสอบ (Version History & Audit Trail)
+* **`GET /api/v1/projects/{project_id}/resources/{resource_id}/versions`**
+  - ดึงรายการเวอร์ชันทั้งหมด (v1, v2, ...) พร้อม Commit Message และชื่อผู้บันทึก
+* **`GET /api/v1/projects/{project_id}/resources/{resource_id}/diff?v_from=1&v_to=2`**
+  - ส่งกลับข้อมูลการเปรียบเทียบความต่าง (Diff JSON) ระหว่าง 2 เวอร์ชัน
+* **`POST /api/v1/projects/{project_id}/resources/{resource_id}/rollback`**
+  - ย้อนกลับสู่เวอร์ชันที่ระบุ:
     ```json
-    {
-      "id": "8fa21e64-...",
-      "name": "Clinical_Trial_Phase1.docx",
-      "file_type": "docx",
-      "status": "ready",
-      "table_of_contents": [
-        { "level": 1, "title": "1. Introduction", "anchor_id": "sec-1" },
-        { "level": 2, "title": "1.1 Background", "anchor_id": "sec-1-1" }
-      ],
-      "semantic_html": "<article><h1 id='sec-1'>1. Introduction</h1><p id='p-001'>...</p></article>"
-    }
+    { "target_version": 1, "commit_message": "Rollback to version 1 due to error in v2" }
     ```
+* **`GET /api/v1/projects/{project_id}/resources/{resource_id}/audit-logs`**
+  - รายการบันทึกการตรวจสอบทุกความเคลื่อนไหว (CREATED, MANUAL_EDIT, AI_EDIT, ROLLBACK)
+  - *(ข้อยกเว้น: การสนทนาถามตอบใน Private Chat จะไม่แสดงในนี้)*
 
 ---
 
-## 4. กลุ่ม API: ศูนย์รวมองค์ความรู้ (Knowledge Hub)
+## 3. กลุ่ม API: Real-time Presence & Collaboration (WebSocket)
 
-### 4.1 Living Project Glossary (คำศัพท์เฉพาะทาง)
-* **`GET /api/v1/projects/{project_id}/glossaries`**
-  - ค้นหาและดึงรายการคำศัพท์ (รองรับ Search Query, Pagination, Filter Verified/Unverified)
-* **`POST /api/v1/projects/{project_id}/glossaries`**
-  - เพิ่มคำศัพท์ใหม่ด้วยตนเอง (Manual addition)
-* **`PATCH /api/v1/projects/{project_id}/glossaries/{glossary_id}`**
-  - อัปเดตคำนิยาม หรือกดยืนยันตรวจทาน (`is_verified: true`)
-
-### 4.2 Interactive Knowledge Graph
-* **`GET /api/v1/projects/{project_id}/knowledge-graph`**
-  - ดึงข้อมูลโหนดและเส้นเชื่อมสำหรับแสดงผลใน GUI (Cytoscape / React Flow):
-  - **Response:**
+* **`WS /ws/projects/{project_id}/resources/{resource_id}?token=<jwt>`**
+  - เชื่อมต่อห้องแก้ไขแบบ Real-time
+  - **Client ส่ง (Event: cursor_move / active_focus):**
     ```json
     {
-      "nodes": [
-        { "id": "uuid-1", "label": "Immunotherapy", "type": "CONCEPT", "summary": "Cancer treatment..." },
-        { "id": "uuid-2", "label": "Trial_Phase1.docx", "type": "SOURCE_DOC", "summary": "Primary trial report" }
-      ],
-      "edges": [
-        { "id": "uuid-e1", "source": "uuid-2", "target": "uuid-1", "relation": "defines" }
+      "type": "presence_update",
+      "anchor_id": "p-014",
+      "cursor_offset": 5,
+      "is_typing": true
+    }
+    ```
+  - **Server บรอดแคสต์ (Event: peer_presence):**
+    ```json
+    {
+      "type": "peer_state",
+      "peers": [
+        {
+          "user_id": "uuid-user-b",
+          "user_name": "Somsak",
+          "user_color": "#10B981",
+          "anchor_id": "p-014",
+          "ai_agent": { "is_active": false }
+        },
+        {
+          "user_id": "uuid-user-a",
+          "user_name": "Somchai",
+          "user_color": "#6366F1",
+          "anchor_id": "p-002",
+          "ai_agent": {
+            "is_active": true,
+            "action": "กำลังเขียนย่อหน้าข้อสรุป..."
+          }
+        }
       ]
     }
     ```
 
-### 4.3 Knowledge Syntheses & Summaries
-* **`GET /api/v1/projects/{project_id}/syntheses`**
-  - ดึงรายการสรุปภาพรวมโปรเจกต์ที่ AI สังเคราะห์ขึ้นมา
+---
+
+## 4. กลุ่ม API: ทรัพยากรและฟอร์แมตข้อมูล (Resources & Viewers)
+
+* **`POST /api/v1/projects/{project_id}/resources/upload`** (Multipart File Upload ทุกชนิด)
+* **`GET /api/v1/projects/{project_id}/resources/{resource_id}`** (ดึง HTML พร้อมสิทธิ์แก้ไข)
+* **`GET /api/v1/projects/{project_id}/resources/{resource_id}/deletion-impact`** (ประเมินผลกระทบก่อนลบ)
+* **`DELETE /api/v1/projects/{project_id}/resources/{resource_id}?retain_knowledge=true`** (ลบไฟล์)
 
 ---
 
-## 5. กลุ่ม API: กฎควบคุมพฤติกรรม AI (Project Rules Engine)
+## 5. กลุ่ม API: ไฮไลต์และ Living Knowledge Hub (Shared)
 
-* **`GET /api/v1/projects/{project_id}/rules`**
-  - รายการกฎทั้งหมดในโปรเจกต์
-* **`POST /api/v1/projects/{project_id}/rules`**
-  - สร้างกฎใหม่:
-    ```json
-    {
-      "name": "Strict Citation & Official Tone",
-      "rule_type": "do",
-      "instruction": "ต้องอ้างอิงรหัสย่อหน้า [Ref: doc_name #p-id] ทุกครั้ง และตอบด้วยภาษาทางการเท่านั้น",
-      "is_active": true
-    }
-    ```
-* **`PATCH /api/v1/projects/{project_id}/rules/{rule_id}/toggle`**
-  - เปิดหรือปิดการทำงานของกฎ (Toggle Active/Inactive)
+* **`POST /api/v1/projects/{project_id}/resources/{resource_id}/annotations`** (บันทึกไฮไลต์สี/โน้ต)
+* **`GET /api/v1/projects/{project_id}/glossaries`** (Living Glossary)
+* **`GET /api/v1/projects/{project_id}/knowledge-graph`** (โหนดและเส้นเชื่อมสำหรับ GUI)
+* **`POST /api/v1/projects/{project_id}/knowledge-graph/reason-nodes`** (สั่ง AI วิเคราะห์ความสัมพันธ์ระหว่าง 2 โหนด)
+* **`GET /api/v1/projects/{project_id}/rules`** & **`POST /api/v1/projects/{project_id}/rules`** (Rules Engine)
 
 ---
 
-## 6. กลุ่ม API: การสนทนาและสร้างสรรค์ (AI Chat & Generative Engine)
+## 6. กลุ่ม API: แชทส่วนบุคคลและสร้างเอกสาร (Private Chat & Generative)
 
-### 6.1 รับ Session สนทนาประจำตัว (1-User-1-Session per Project)
-* **`GET /api/v1/projects/{project_id}/chat/session`**
-  - ดึงประวัติและสถานะ Session ของผู้ใช้รายนั้น (หากยังไม่มี ระบบจะสร้างให้อัตโนมัติ 1 Session)
-  - ตอบกลับพร้อมประวัติข้อความย้อนหลัง
-
-### 6.2 ส่งข้อความและรับคำตอบแบบ Real-time Stream (SSE)
-* **`POST /api/v1/projects/{project_id}/chat/messages`**
-  - **Request Body:**
-    ```json
-    {
-      "message": "ช่วยสรุปข้อเปรียบเทียบผลการรักษาจากโฟลเดอร์ Phase 1",
-      "context_scope": {
-        "folder_ids": ["uuid-folder-phase1"],
-        "resource_ids": []
-      }
-    }
-    ```
-  - **Response (Server-Sent Events: text/event-stream):**
-    ```
-    event: delta
-    data: {"token": "จากการ"}
-
-    event: delta
-    data: {"token": "วิเคราะห์..."}
-
-    event: citation
-    data: {"citations": [{"resource_id": "uuid-doc", "name": "Trial.docx", "anchor_id": "p-012"}]}
-
-    event: done
-    data: {"message_id": "uuid-msg-123"}
-    ```
-
-### 6.3 คำสั่งสร้างเอกสารใหม่จาก AI (Save Generative Artifact to Resource)
-* **`POST /api/v1/projects/{project_id}/resources/create-from-ai`**
-  - นำผลลัพธ์ที่ AI สร้างในแชท บันทึกเป็นเอกสารชิ้นใหม่ใน Resource Folder ทันที
-  - **Request Body:**
-    ```json
-    {
-      "folder_id": "uuid-folder-target",
-      "name": "Comparative_Analysis_Report.md",
-      "content": "# บทวิเคราะห์เปรียบเทียบ...\n\nเนื้อหาที่ AI สังเคราะห์...",
-      "source_chat_message_id": "uuid-msg-123"
-    }
-    ```
-  - **Response:** เอกสารใหม่ถูกแปลงเป็น Semantic HTML และส่งให้ Background Job อัปเดต Knowledge Graph ทันที
+* **`GET /api/v1/projects/{project_id}/chat/session`** (Session ส่วนบุคคล 1 คนต่อ 1 Session)
+* **`POST /api/v1/projects/{project_id}/chat/messages`** (SSE Real-time Streaming พร้อม Citations)
+* **`POST /api/v1/projects/{project_id}/chat/propose-edit`** (สั่ง AI ร่างข้อความใหม่เพื่อสร้าง Pending Proposal)
+* **`POST /api/v1/projects/{project_id}/resources/create-from-ai`** (นำคำตอบในแชทบันทึกเป็น Shared Resource ใหม่)

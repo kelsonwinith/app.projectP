@@ -1,149 +1,114 @@
 # Product Requirements Document (PRD) 📋
-## Project: CogniNest (Personal & Team AI Knowledge Engine)
+## Project: CogniNest (Universal AI Knowledge & Collaborative Resource OS)
 
 ---
 
 ## 1. วิสัยทัศน์และเป้าหมายของผลิตภัณฑ์ (Product Vision & Goals)
 
 ### 1.1 วิสัยทัศน์ (Vision)
-สร้างแพลตฟอร์มจัดการและสังเคราะห์องค์ความรู้ยุคใหม่ ที่เปลี่ยนเอกสารและข้อมูลดิบทุกรูปแบบ (Any File Ingestion) ให้กลายเป็น **"Living Knowledge Ecosystem"** บนระบบคลาวด์ ข้อมูลทั้งหมดจะถูกสกัด จัดระเบียบใหม่ และเรนเดอร์ในรูปแบบ Web HTML หลากมิติ (Document, Presentation, Spreadsheet, Graph, Image with AI Vision) 
-
-โดยผู้ใช้ทำงานร่วมกันบนคลังทรัพยากรและความรู้ส่วนกลาง (Shared Project Knowledge) ในขณะที่ทุกคนมี **AI Partner ส่วนตัว (Private 1-User-1-Session)** ที่ชาญฉลาด ปฏิบัติตามกฎ (Rules) ของโปรเจกต์ และสามารถชี้ระบุแหล่งที่มา (Universal Citation) ได้ลึกถึงระดับย่อหน้า สไลด์ ช่องตาราง หรือรูปภาพ
+สร้างแพลตฟอร์มบริหารจัดการและสังเคราะห์องค์ความรู้ยุคใหม่ที่รองรับ **"ไฟล์อะไรก็ได้ในโลก"** โดยแปลงข้อมูลต้นฉบับให้อยู่ในรูปแบบข้อมูลมาตรฐานของระบบ และนำเสนอใหม่ (Re-represented) ผ่านหน้าเว็บเป็น **Semantic HTML หลากรูปแบบ (Document, Presentation, Interactive Table, Image with Vision AI)** ที่ผู้ใช้สามารถ **เปิดดูและแก้ไขเนื้อหาได้ทันที (In-Place Editable)** ทำงานร่วมกันแบบ **Real-time Multiplayer (เห็น Live Cursors และ AI Presence)** ควบคุมการเปลี่ยนแปลงด้วยระบบ **Human-in-the-Loop Confirmation** และเก็บบันทึกประวัติการแก้ไขครบ 100% (**Full Audit Trail & Version History**)
 
 ### 1.2 วัตถุประสงค์หลัก (Core Objectives)
-1. **Universal Ingestion & Multi-Format Representation:** รองรับไฟล์ทุกประเภท แปลงข้อมูลดิบเข้าสู่มาตรฐานกลางของระบบ และ Represent ออกมาในรูปแบบ Interactive HTML ตามลักษณะข้อมูล (Document, Presentation Slides, Data Tables, Interactive Graphs, Images with AI Vision) โดยเนื้อหาครบถ้วน 100%
-2. **Shared Knowledge vs Private AI Sessions:** พื้นที่จัดเก็บ Resource และ Knowledge ทั้งหมดเป็นของส่วนกลางที่สมาชิกทุกคนในโปรเจกต์เข้าถึงร่วมกัน แต่ประวัติการสนทนาและ Context ของ AI จะเป็นพื้นที่ส่วนตัว 1 Session ต่อคน
-3. **Autonomous Knowledge Generation:** ลดภาระผู้ใช้ด้วย Background Job สกัดคำศัพท์เฉพาะ (Living Glossary), มโนทัศน์ (Knowledge Graph), และใจความสำคัญอัตโนมัติ
-4. **Impact-Aware Resource Management:** เมื่อมีการลบหรือแก้ไขทรัพยากร ระบบจะวิเคราะห์ผลกระทบ (Impact Analysis) และขึ้นแจ้งเตือนอย่างชัดเจนก่อนดำเนินการ
-5. **Universal Granular Citations:** ข้อมูลและคำตอบทุกอย่างของ AI ต้องสามารถอ้างอิงย้อนกลับไปยังพิกัดต้นทางได้เสมอ ไม่ว่าจะเป็นย่อหน้า สไลด์ เซลล์ตาราง หรือรูปภาพ
+1. **In-Place Editable Multi-Format Viewers:** เปิดดูไฟล์ใดๆ แล้วสามารถพิมพ์แก้ไขเนื้อหาได้ทันทีในหน้าเว็บ
+2. **Explicit Save & Knowledge Sync Trigger:** การแก้ไขจะไม่บันทึกอัตโนมัติ ผู้ใช้ต้องกด "บันทึก" และกดยืนยันด้วยตนเองเท่านั้น ระบบจึงจะเริ่มรัน Background Job เพื่ออัปเดต Knowledge ประจำโปรเจกต์
+3. **Human-in-the-Loop AI Review (Confirm Change):** เมื่อ AI Agent ช่วยร่างหรือแก้ไขเนื้อหา ผู้ใช้เจ้าของ Agent ต้องตรวจสอบ Diff และกดปุ่ม "Confirm Change" ข้อมูลจึงจะถูกบันทึกลง Resource จริง
+4. **Real-time Multiplayer Collaboration & AI Presence:** เห็นเคอร์เซอร์และตำแหน่งการพิมพ์ของเพื่อนร่วมทีมแบบ Real-time และเห็นสถานะว่า AI Agent ของใครกำลังแก้ไขย่อหน้าใดอยู่
+5. **Full Audit Trail & Version History:** ทุก Resource เก็บบันทึกประวัติการเปลี่ยนแปลงแบบ Git-like (ใครแก้, เมื่อไหร่, Diff อะไรบ้าง) ยกเว้นการแชทถามตอบส่วนตัวที่ไม่แตะต้อง Resource
 
 ---
 
-## 2. กลุ่มผู้ใช้งานหลัก (Target Personas)
-
-1. **นักวิจัยและทีม R&D (Researchers & R&D Teams):** รวบรวมเปเปอร์, สเปกชีต, กราฟ และรูปผลการทดลอง ให้ AI เชื่อมโยงมโนทัศน์และสกัดคำศัพท์เฉพาะ
-2. **ทีมพัฒนาผลิตภัณฑ์และธุรกิจ (Product & Business Teams):** รวบรวมสไลด์ Pitch Deck, ตารางวิเคราะห์คู่แข่ง (.xlsx), Requirement (.docx) และตั้งกฎ (Rules) ให้ AI ร่างเอกสารสรุป
-3. **องค์กรที่ต้องการจัดการคู่มือและคลังความรู้ (Corporate Knowledge Bases):** แปลงไฟล์หลากรูปแบบในองค์กรให้กลายเป็นฐานข้อมูลความรู้ที่ค้นหาง่าย มีพจนานุกรมศัพท์เฉพาะ และอ่านง่ายผ่านเบราว์เซอร์
-
----
-
-## 3. ขอบเขตฟังก์ชันการทำงาน (Detailed Functional Requirements)
-
-### 3.1 การจัดการสิทธิ์และการทำงานร่วมกัน (Collaboration & Multi-tenancy Model)
+## 2. การจัดการสิทธิ์และความร่วมมือ (Collaboration & Multi-tenancy Model)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        PROJECT: "Project Apollo"                       │
+│                        PROJECT: "NextGen Mobility"                     │
 ├────────────────────────────────────────────────────────────────────────┤
-│  🌐 SHARED PROJECT COMMONS (สมาชิกทุกคนเห็นและเข้าถึงร่วมกัน)           │
-│  ├─ 📂 Resources (Folders, Docs, Sheets, Slides, Images)               │
-│  ├─ 🧠 Knowledge Hub (Glossary, Knowledge Graph, Living Summaries)     │
-│  └─ ⚙️ Project Rules (Do's, Don'ts, Constraints)                       │
+│ 🌐 REAL-TIME COLLABORATIVE SHARED LAYER                                │
+│  ├── 📂 Resources (In-place Editable HTML, Live Cursors, Audit Log)   │
+│  ├── 📖 Living Project Glossary (พจนานุกรมศัพท์เฉพาะทาง)                │
+│  ├── 🕸️ Interactive Knowledge Graph (โหนดความสัมพันธ์ของทั้งโปรเจกต์)     │
+│  ├── 💡 Knowledge Syntheses (บทสรุปภาพรวม)                            │
+│  └── ⚙️ Project Rules (กฎและทักษะที่ใช้ร่วมกันทั้งโปรเจกต์)             │
 ├────────────────────────────────────────────────────────────────────────┤
-│  🔒 PRIVATE USER SPACES (พื้นที่ส่วนตัวของแต่ละคน)                     │
-│  ├─ User A's Private AI Chat Session (ประวัติการคุย, ข้อความส่วนตัว)    │
-│  ├─ User B's Private AI Chat Session                                   │
-│  └─ User C's Private AI Chat Session                                   │
+│ 🔒 PRIVATE LAYER (แยกอิสระเฉพาะผู้ใช้แต่ละคน สไตล์ NotebookLM)         │
+│  ├── 👤 User A Chat Session & AI Agent (ไม่ถูกนับเข้า Audit Log)       │
+│  └── 👤 User B Chat Session & AI Agent (ส่วนตัว 100%)                  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Shared Workspace Commons:**
-   - ทรัพยากรทั้งหมด (Resources) ทั้งที่อัปโหลดโดยผู้ใช้ หรือที่สร้างขึ้นใหม่โดย AI จะถูกจัดเก็บเป็นสมบัติส่วนกลางของโปรเจกต์
-   - ศูนย์รวมความรู้ (Knowledge Hub: Glossary, Graph, Summaries) จะแชร์และอัปเดตร่วมกันในโปรเจกต์แบบ Real-time
-2. **Private 1-User-1-Session per Project:**
-   - ผู้ใช้แต่ละคนมี AI Chat Session แยกเฉพาะตนเอง 1 Session ต่อโปรเจกต์ (สไตล์ NotebookLM)
-   - สมาชิกคนอื่นจะไม่เห็นประวัติการคุยหรือข้อความส่วนตัวของเพื่อนร่วมทีม
-   - ผู้ใช้สามารถสั่งให้ AI ร่างเอกสารใหม่ในแชทส่วนตัว แล้วกด **"บันทึกเข้า Resource ส่วนกลาง"** เพื่อแชร์ให้ทีมได้ทันที
+* **Human-in-the-Loop AI Action:** หาก User A สั่ง AI Agent ของตนเองว่า *"ช่วยแก้บทนำให้กระชับขึ้น"* AI จะสร้างเป็น **Proposed Changes (Diff Draft)** ซึ่งเฉพาะ User A เท่านั้นที่สามารถกด Accept หรือ Reject ได้ เมื่อกดยอมรับ ระบบจะบันทึกลง Shared Resource โดยมี Audit Log ระบุว่า *"แก้ไขโดย User A (ผ่าน AI Agent)"*
 
 ---
 
-### 3.2 การนำเข้าและแสดงผลหลากมิติ (Universal Ingestion & Multi-Format HTML Engine)
+## 3. ขอบเขตฟังก์ชันการทำงานอย่างละเอียด (Functional Requirements)
 
-ไม่ว่าผู้ใช้จะอัปโหลดไฟล์ชนิดใด ระบบจะแปลงเข้าสู่รูปแบบมาตรฐานกลาง และ Represent ผ่าน Web Application ใน 5 ฟอร์แมตหลัก:
+### 3.1 การแก้ไขเนื้อหาทันทีบนหน้าเว็บ (In-Place Editable HTML Viewers)
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│              UNIVERSAL INGESTION & REPRESENTATION ENGINE                │
-├──────────────────┬─────────────────────────────┬────────────────────────┤
-│ รูปแบบไฟล์นำเข้า │ กลไกการประมวลผล             │ รูปแบบการแสดงผล HTML    │
-├──────────────────┼─────────────────────────────┼────────────────────────┤
-│ DOCX, PDF, TXT,  │ สกัดโครงสร้าง ย่อหน้า ตาราง │ 📄 Document View       │
-│ Markdown, Web    │ คงข้อความครบ 100%           │ (Reader Mode + TOC)    │
-├──────────────────┼─────────────────────────────┼────────────────────────┤
-│ PPTX, Slides,    │ สกัดข้อความแยกตามแผ่นสไลด์  │ 🎞️ Presentation View    │
-│ Keynote          │ พร้อม Layout และ Speaker Note│ (Slide Deck Viewer)    │
-├──────────────────┼─────────────────────────────┼────────────────────────┤
-│ XLSX, XLS, CSV,  │ สกัดตาราง โครงสร้างหัวคอลัมน์│ 📊 Table / Sheet View  │
-│ TSV              │ และความสัมพันธ์ของแถว-คอลัมน์│ (Interactive Grid View)│
-├──────────────────┼─────────────────────────────┼────────────────────────┤
-│ Mermaid, JSON,   │ สกัดโหนด ความเชื่อมโยง      │ 🕸️ Graph / Flow View   │
-│ Flowcharts       │ และ Data Relationship       │ (Interactive SVG Graph)│
-├──────────────────┼─────────────────────────────┼────────────────────────┤
-│ Images (PNG, JPG,│ จัดเก็บภาพความละเอียดสูง +  │ 🖼️ Vision & Media View │
-│ WebP, SVG)       │ AI Vision บรรยายเนื้อหาภาพ   │ (High-res View + AI    │
-│                  │ ออกมาเป็นคำอธิบายอย่างละเอียด│ Detailed Description)  │
-└──────────────────┴─────────────────────────────┴────────────────────────┘
-```
+ผู้ใช้สามารถเปิดดู Resource แล้วแก้ไขได้ทันทีตามฟอร์แมต:
+* **Document Reader/Editor:** แก้ไขข้อความ หัวข้อ (H1-H6) รายการ และตารางแบบ WYSIWYG
+* **Presentation Slide Editor:** แก้ไขข้อความในแต่ละสไลด์ จัดลำดับสไลด์ใหม่
+* **Data Grid Table Editor:** ดับเบิลคลิกเซลล์ในตารางเพื่อพิมพ์แก้ตัวเลข/ข้อความ เพิ่มหรือลบแถวได้
+* **Visual Card Editor:** แก้ไขคำบรรยายภาพ (Caption) และข้อความ OCR
 
-* **กฎเกณฑ์สำคัญสำหรับไฟล์รูปภาพ (Image Vision Ingestion):**
-  - รูปภาพจะถูกเก็บไฟล์ต้นฉบับไว้เพื่อแสดงผล
-  - ระบบ Background Job จะส่งภาพเข้าโมเดล **AI Multimodal Vision** เพื่อสร้างคำบรรยายเชิงลึก (Dense Semantic Description)
-  - คำบรรยายนี้จะถูกนำไปทำ Index, สร้างเวกเตอร์สำหรับ RAG, และสกัดคำศัพท์เข้า Glossary ทำให้ AI สามารถตอบคำถามและอ้างอิงข้อมูลจากรูปภาพได้เสมือนเอกสารข้อความ
+#### กฎการบันทึก (Explicit Manual Save & Confirmation):
+1. ระบบ **ไม่บันทึกอัตโนมัติ (No Auto-Save silently to project)** เพื่อป้องกันข้อมูลดิบที่ยังแก้ไม่เสร็จไปปนกับ Knowledge Base
+2. ขณะกำลังแก้ไข หน้าจอจะมีสถานะ `Unsaved Changes` พร้อมปุ่ม `💾 บันทึกการเปลี่ยนแปลง`
+3. เมื่อผู้ใช้กดปุ่มบันทึก ระบบจะแสดง **Confirmation Modal** เพื่อยืนยัน:
+   - ผู้ใช้สามารถใส่บันทึกย่อ (Commit Message / Change Note) เช่น *"อัปเดตตัวเลขผลการทดลองไตรมาส 3"*
+4. เมื่อกดยืนยัน:
+   - บันทึกเวอร์ชันใหม่ลงตาราง `resource_versions`
+   - บันทึกประวัติลง `resource_audit_logs`
+   - **รัน Background Job อัตโนมัติ** เพื่อดึงคำศัพท์ใหม่เข้า Living Glossary และอัปเดต Knowledge Graph
 
 ---
 
-### 3.3 ประสบการณ์การอ่านและการโต้ตอบ (Interactive HTML Reader & Selection Toolbar)
+### 3.2 การตรวจทานผลงานจาก AI Agent (Human-in-the-Loop AI Proposal & Review)
 
-เมื่อผู้ใช้เปิดอ่านเนื้อหาในเบราว์เซอร์:
-1. **Dynamic Table of Contents (TOC):** สารบัญด้านข้างเลื่อนตามตำแหน่งที่อ่าน
-2. **Living Glossary Tooltips:** คำศัพท์ทางเทคนิคจะมีขีดเส้นใต้ เมื่อเอาเมาส์ชี้ (Hover) จะปรากฏ Popover Card แสดงคำนิยาม
-3. **Floating Selection Toolbar (เมนูลอยเมื่อคลุมดำข้อความ):**
-   - เมื่อผู้ใช้ใช้เมาส์ลากคลุมดำข้อความหรือตัวเลขใดๆ บนหน้าเว็บ จะมีปุ่ม Action Bar เด้งขึ้นมา:
-     - `💬 ส่งเข้าแชท AI` (ส่งท่อนที่เลือกเข้าสู่ Chat Input เพื่อถามเจาะลึกทันที)
-     - `📖 เพิ่มเป็น Glossary Term` (เปิดหน้าต่างบันทึกคำศัพท์นี้นิยามลงพจนานุกรมโปรเจกต์)
-     - `🖍️ ไฮไลต์ / โน้ตส่วนตัว` (บันทึกความคิดเห็นส่วนตัวกำกับไว้)
-
----
-
-### 3.4 ระบบลบและวิเคราะห์ผลกระทบ (Impact-Aware Resource Deletion)
-
-เพื่อป้องกันการสูญหายของความรู้โดยไม่ตั้งใจ เมื่อผู้ใช้สั่งลบ Resource ใดๆ ในโฟลเดอร์:
-1. **Pre-flight Impact Analysis:** ระบบจะคำนวณและแสดง Modal แจ้งเตือนผลกระทบก่อนลบ:
-   ```
-   ⚠️ ยืนยันการลบไฟล์: "Clinical_Trial_Phase1.docx"
-   ─────────────────────────────────────────────────────────────
-   การลบไฟล์นี้จะส่งผลกระทบต่อองค์ความรู้ในโปรเจกต์ ดังนี้:
-   • 📖 คำศัพท์ใน Glossary: 5 คำจะไม่มีเอกสารอ้างอิง (กลายเป็น Orphaned)
-   • 🕸️ โหนดใน Knowledge Graph: 8 โหนด และ 14 เส้นเชื่อมโยงจะถูกลบ
-   • 💡 บทสรุป AI (Syntheses): 2 หัวข้อมีเนื้อหาอ้างอิงจากไฟล์นี้
-   ─────────────────────────────────────────────────────────────
-   ตัวเลือกการจัดการคำศัพท์ Glossary:
-   ( ) ลบคำศัพท์ที่เกี่ยวข้องทั้งหมดทิ้งทันที
-   (•) คงคำศัพท์ไว้ในระบบ แต่ติดป้ายกำกับว่า [เอกสารต้นทางถูกลบ]
-   ```
-2. ผู้ใช้ต้องกดยืนยันเพื่อดำเนินการลบอย่างปลอดภัย
+เมื่อผู้ใช้สั่งให้ AI Agent ในแชทส่วนตัวแก้ไขหรือเรียบเรียง Resource:
+1. AI จะไม่บันทึกทับ Resource โดยตรง แต่จะสร้างสถานะ **"Pending Proposal"**
+2. หน้าจอ Editor จะแสดงแถบ **Diff Review Bar** (เทียบข้อความเดิมสีแดง - ข้อความใหม่สีเขียว)
+3. สมาชิกผู้สั่ง AI เท่านั้นที่จะเห็นปุ่มควบคุม:
+   - `✅ ยอมรับและบันทึก (Confirm & Save Changes)`: บันทึกลง Resource และทริกเกอร์ Background Job
+   - `❌ ปฏิเสธ (Discard Changes)`: ยกเลิกข้อเสนอแนะ กลับไปใช้เนื้อหาเดิม
+4. เพื่อนร่วมทีมคนอื่นจะเห็นข้อความแจ้งเตือน: *"User A กำลังตรวจทานการแก้ไขจาก AI Agent"*
 
 ---
 
-### 3.5 ระบบอ้างอิงสากล (Universal Granular Citation Protocol)
+### 3.3 การทำงานร่วมกันแบบเรียลไทม์ (Multiplayer Collaboration & Live Presence)
 
-AI ต้องตอบคำถามโดยมีหลักฐานอ้างอิงเสมอ โดยมีมาตรฐาน Citation Tag ครอบคลุมทุกฟอร์แมต:
-* **เอกสารข้อความ:** `[Ref: doc-name #p-014]` (ย่อหน้าที่ 14)
-* **สไลด์นำเสนอ:** `[Ref: presentation-name #slide-05]` (สไลด์แผ่นที่ 5)
-* **ตาราง / สเปรดชีต:** `[Ref: financial-model.xlsx #sheet1-R12C4]` (แถว 12 คอลัมน์ 4)
-* **รูปภาพ:** `[Ref: system-diagram.png #ai-caption]` (คลิกแล้วเปิดรูปพร้อมตีกรอบจุดที่อ้างอิง)
-
-เมื่อผู้ใช้คลิกที่ Citation หน้าต่าง Preview จะเปิดขึ้นและเลื่อนไปยังจุดอ้างอิง พร้อมเอฟเฟกต์ไฮไลต์สีทันที
-
----
-
-### 3.6 ระบบควบคุมพฤติกรรม AI (Project Rules Engine)
-- กำหนดกฎ Do's (สิ่งที่ต้องทำ), Don'ts (ข้อห้าม), Tone of Voice และ Formatting
-- กฎทั้งหมดถูกเก็บไว้ที่ระดับโปรเจกต์ (Shared Rules) เพื่อให้ผลลัพธ์ของ AI สอดคล้องตามมาตรฐานเดียวกันสำหรับสมาชิกทุกคน
+ใช้เทคโนโลยี **WebSocket + CRDT (Yjs / Liveblocks)**:
+1. **Live Multiplayer Cursors:**
+   - แสดงเคอร์เซอร์พร้อมชื่อและสีประจำตัวของเพื่อนร่วมทีมที่กำลังเปิดดูหรือพิมพ์อยู่ในเอกสารเดียวกัน
+   - แสดงขอบไฮไลต์ (Selection Box) รอบย่อหน้าหรือเซลล์ตารางที่เพื่อนร่วมทีมกำลังโฟกัส
+2. **AI Agent Presence:**
+   - หาก User B กำลังให้ AI Agent แก้ไขย่อหน้าใด บริเวณย่อหน้านั้นจะแสดงแถบประกายสีม่วง พร้อมป้ายกำกับ:  
+     `🤖 AI ของ User B กำลังเรียบเรียงข้อความนี้...`
+   - ป้องกันไม่ให้สมาชิกคนอื่นพิมพ์ทับตำแหน่งที่ AI กำลังทำงาน
 
 ---
 
-### 3.7 การสร้างสรรค์และตกผลึกเอกสารใหม่ (Generative Co-Creation)
-- ผู้ใช้สามารถสั่งให้ AI เรียบเรียงหรือร่างเอกสารใหม่จากข้อมูลในคลัง
-- ผลลัพธ์ในแชทจะมีปุ่ม `💾 บันทึกเป็น Resource ใหม่`
-- เมื่อบันทึก เอกสารนั้นจะถูกแปลงเป็น Semantic HTML บันทึกเข้าสู่โฟลเดอร์ที่เลือก และกลายเป็น Resource ส่วนกลางของโปรเจกต์ทันที
+### 3.4 ระบบประวัติการแก้ไขและบันทึกการตรวจสอบ (Full Audit Trail & Version History)
+
+ทุก Resource ในโปรเจกต์จะมีแท็บ **"ประวัติและบันทึกการแก้ไข (Audit & History)"**:
+1. **Audit Log Details:**
+   - ผู้กระทำ (Actor: User ID, ชื่อ, และระบุว่าเป็นการแก้ด้วยมือหรือผ่าน AI Agent)
+   - เวลาที่เกิดการเปลี่ยนแปลง (Timestamp)
+   - ประเภทการกระทำ (Action: `RESOURCE_CREATED`, `MANUAL_EDIT`, `AI_EDIT_CONFIRMED`, `RESOURCE_MOVED`, `RESOURCE_DELETED`)
+   - คำอธิบายการเปลี่ยนแปลง (Change Note)
+2. **Version History & Diff Viewer:**
+   - แสดงเวอร์ชันย้อนหลังทั้งหมด (v1.0, v1.1, v1.2, ...)
+   - สามารถคลิกดู Diff แบบ Side-by-side หรือ Unified View ได้
+   - มีปุ่ม **"ย้อนกลับสู่เวอร์ชันนี้ (Rollback to this version)"** ซึ่งต้องกดยืนยันก่อนเช่นกัน
+3. **ข้อยกเว้น:**
+   - คำถาม-คำตอบใน Private AI Chat จะ **ไม่ถูกบันทึกใน Audit Log** เพื่อรักษาความเป็นส่วนตัวและเนื่องจากไม่ได้ส่งผลกระทบต่อ Resource ส่วนรวมของโปรเจกต์
+
+---
+
+### 3.5 ระบบเตือนผลกระทบก่อนลบ (Deletion Impact Assessment)
+- แสดง Impact Preview Modal เตือนจำนวนคำศัพท์ Glossary และโหนด Graph ที่จะขาดหาย
+- ให้เลือกระหว่าง `Cascade Delete` หรือ `Retain Knowledge as Static Fact`
+
+---
+
+### 3.6 Floating Selection Toolbar ในหน้าอ่าน/แก้ไข
+- คลุมดำข้อความเพื่อ: `💬 ถาม AI ในแชท`, `📖 ดึงเป็น Glossary`, `🖍️ ไฮไลต์/จดโน้ตส่วนตัว`

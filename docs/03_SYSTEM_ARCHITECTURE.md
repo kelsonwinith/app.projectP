@@ -1,158 +1,140 @@
 # Technical & System Architecture 🏗️
 
-เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **CogniNest** อย่างครอบคลุม โดยเน้นการรองรับไฟล์ทุกประเภท (Any File Ingestion), การแปลงเป็น Semantic HTML หลากมิติ (Multi-Format HTML Representation), กลไก AI Vision Pipeline สำหรับรูปภาพ, ระบบ Universal Granular Citation และ Impact Analysis Engine
+เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **CogniNest** ฉบับปรับปรุง เพื่อรองรับ **ระบบแก้ไขเอกสารในหน้าเว็บ (In-Place Semantic Editor)**, **Multiplayer Real-time Collaboration (WebSocket / CRDT Presence)**, **AI Agent Presence & Human-in-the-Loop Diff Engine**, และ **สถาปัตยกรรม Audit Log & Version History**
 
 ---
 
-## 1. ผังสถาปัตยกรรมระบบรวม (Detailed Component Architecture)
+## 1. ผังสถาปัตยกรรมทั้งระบบ (Full Real-time Collaborative Architecture)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        CLIENT LAYER (Next.js 15)                       │
-│  ┌──────────────────────┬──────────────────────┬────────────────────┐  │
-│  │ Multi-Format Reader: │ Interactive          │ Floating Action    │  │
-│  │ - Document View      │ Knowledge Graph      │ Selection Toolbar  │  │
-│  │ - Slide Deck View    │ (Cytoscape/ReactFlow)│ (Chat / Glossary)  │  │
-│  │ - Spreadsheet View   ├──────────────────────┼────────────────────┤  │
-│  │ - Vision Media View  │ Living Glossary Hub  │ Private Chat       │  │
-│  │ - Graph/Flow View    │ (Hover Popovers)     │ Studio (SSE)       │  │
-│  └──────────────────────┴──────────────────────┴────────────────────┘  │
+│  ┌───────────────────────┬──────────────────────┬───────────────────┐  │
+│  │  In-Place WYSIWYG     │  Live Multiplayer    │  AI Presence &    │  │
+│  │  Semantic Editor      │  Cursors (Yjs/WS)    │  Diff Review Bar  │  │
+│  ├───────────────────────┼──────────────────────┼───────────────────┤  │
+│  │  Explicit Save Modal  │  Audit History &     │  Private AI Chat  │  │
+│  │  (Commit Message)     │  Diff Viewer Panel   │  (1 User 1 Sess)  │  │
+│  └───────────────────────┴──────────────────────┴───────────────────┘  │
 └───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTPS / REST / SSE / WebSocket
-                                    ▼
+                     HTTPS (REST / SSE) │ ▲ WebSocket (Presence & Cursors)
+                                        ▼ │
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     BACKEND API LAYER (Python FastAPI)                 │
-│  ┌──────────────────────┬──────────────────────┬────────────────────┐  │
-│  │ Auth & Multi-tenant  │ Pre-flight Impact    │ RAG & Rules        │  │
-│  │ (Shared Commons vs   │ Analysis Engine      │ Compiler Service   │  │
-│  │  Private Sessions)   │ (Pre-delete checks)  │ (Prompt Harness)   │  │
-│  └──────────────────────┴──────────────────────┴────────────────────┘  │
+│  ┌───────────────────────┬──────────────────────┬───────────────────┐  │
+│  │ Auth & Multi-tenant   │ Realtime WebSocket   │ Version & Audit   │  │
+│  │ (Owner/Editor/Viewer) │ Presence Gateway     │ Manager Service   │  │
+│  ├───────────────────────┼──────────────────────┼───────────────────┤  │
+│  │ AI Proposal & Diff    │ Explicit Save &      │ Private Chat SSE  │  │
+│  │ Review Controller     │ Background Trigger   │ Streaming Service │  │
+│  └───────────────────────┴──────────────────────┴───────────────────┘  │
 └──────────────────┬────────────────────────────────┬────────────────────┘
-                   │                                │ Enqueue Tasks
+                   │                                │ Enqueue Sync Job
                    ▼                                ▼
 ┌──────────────────────────────────┐ ┌──────────────────────────────────┐
 │     DATABASE & VECTOR STORE      │ │       ASYNCHRONOUS WORKER        │
 │          (PostgreSQL 16)         │ │         (Celery / Redis)         │
 │  ┌─────────────────────────────┐ │ │  ┌─────────────────────────────┐ │
-│  │ Relational: Users, Projects │ │ │  │ 1. Multi-Format Converter   │ │
-│  │ Folders, Glossaries, Rules  │ │ │  │    (Doc/Slide/Sheet/Vision) │ │
-│  ├─────────────────────────────┤ │ │  ├─────────────────────────────┤ │
-│  │ Vector Store (pgvector):    │ │ │  │ 2. AI Multimodal Vision     │ │
-│  │ Chunks & Granular Anchors   │ │ │  │    (Image Captioning)       │ │
-│  ├─────────────────────────────┤ │ │  ├─────────────────────────────┤ │
-│  │ Graph: Nodes & Edges        │ │ │  │ 3. Living Glossary Extractor│ │
-│  └─────────────────────────────┘ │ │  ├─────────────────────────────┤ │
-│                                  │ │  │ 4. Knowledge Graph Extractor│ │
-│                                  │ │  └─────────────────────────────┘ │
-└──────────────────────────────────┘ └──────────────────────────────────┘
+│  │ Shared Resources & Folders  │ │ │  │ Knowledge Sync Pipeline:    │ │
+│  ├─────────────────────────────┤ │ │  │ - Re-extract Living Glossary│ │
+│  │ Resource Versions & Audits  │ │ │  │ - Update Knowledge Graph    │ │
+│  ├─────────────────────────────┤ │ │  │ - Re-embed Modified Chunks  │ │
+│  │ Pending AI Proposals        │ │ │  └─────────────────────────────┘ │
+│  ├─────────────────────────────┤ │ └──────────────────────────────────┘
+│  │ Shared Living Knowledge Hub │ │
+│  ├─────────────────────────────┤ │
+│  │ Private AI Chat Sessions    │ │
+│  └─────────────────────────────┘ │
+└──────────────────────────────────┘
 ```
 
 ---
 
-## 2. Universal Ingestion & Multi-Format Representation Engine
+## 2. Real-time Collaboration & Multiplayer Presence Architecture
 
-ระบบรับไฟล์ทุกประเภท แล้วแปลงเข้าสู่ **Intermediate Canonical Representation (ICR)** ก่อนเรนเดอร์ออกมาเป็น Interactive HTML ตามลักษณะของข้อมูล:
+เพื่อให้ผู้ใช้เห็นตำแหน่งเคอร์เซอร์ของเพื่อนร่วมทีมและสถานะ AI แบบเรียลไทม์:
 
-### 2.1 ตระกูลเอกสารข้อความ (Documents: `.docx`, `.pdf`, `.txt`, `.md`, Web URL)
-* **เครื่องมือสกัด:** `Mammoth`, `PyMuPDF`, `Markdown-it-py`, `Trafilatura`
-* **รูปแบบการแปลงเป็น HTML:**
-  - สร้างโครงสร้าง `<article class="doc-view">`
-  - ฝัง ID ประจำย่อหน้าแบบต่อเนื่อง: `<p id="p-001">เนื้อหา...</p>`
-  - ตาราง: `<table id="tbl-001">...</table>`
-  - หัวข้อ: `<h1 id="sec-1">หัวข้อหลัก</h1>`
-
-### 2.2 ตระกูลสไลด์นำเสนอ (Presentations: `.pptx`, Keynote)
-* **เครื่องมือสกัด:** `python-pptx`
-* **รูปแบบการแปลงเป็น HTML:**
-  - แปลงแต่ละแผ่นสไลด์เป็น Container:
-    ```html
-    <section class="slide-deck">
-      <div class="slide-card" id="slide-1" data-slide-number="1">
-        <h2 class="slide-title">Market Analysis 2026</h2>
-        <div class="slide-body">...</div>
-        <div class="speaker-notes" id="slide-1-notes">...บันทึกของผู้บรรยาย...</div>
-      </div>
-    </section>
-    ```
-
-### 2.3 ตระกูลตารางและสเปรดชีต (Spreadsheets: `.xlsx`, `.xls`, `.csv`, `.tsv`)
-* **เครื่องมือสกัด:** `OpenPyXL`, `pandas`
-* **รูปแบบการแปลงเป็น HTML:**
-  - เรนเดอร์เป็น Interactive Data Grid พร้อมระบบ Filter, Sort และระบุพิกัดเซลล์:
-    ```html
-    <div class="spreadsheet-view" data-sheet="Q1_Financials">
-      <table id="sheet-q1">
-        <thead>
-          <tr id="sheet-q1-header"><th>A (Quarter)</th><th>B (Revenue)</th></tr>
-        </thead>
-        <tbody>
-          <tr id="sheet-q1-R1"><td id="sheet-q1-R1C1">Q1</td><td id="sheet-q1-R1C2">$1,200,000</td></tr>
-        </tbody>
-      </table>
-    </div>
-    ```
-
-### 2.4 ตระกูลรูปภาพและไดอะแกรม (Images with AI Vision: `.png`, `.jpg`, `.svg`, `.webp`)
-* **เครื่องมือสกัด & Vision Pipeline:**
-  1. จัดเก็บไฟล์ภาพต้นฉบับลง Object Storage (หรือ File Server)
-  2. ส่งภาพเข้าโมเดล **AI Multimodal Vision** (เช่น GPT-4o Vision หรือ Gemini Flash Vision) พร้อม Prompt:
-     *"จงบรรยายองค์ประกอบ แผนภาพ ตาราง ตัวอักษร และใจความสำคัญทั้งหมดในภาพนี้อย่างละเอียด เพื่อใช้เป็นฐานความรู้ RAG"*
-  3. AI สร้างคำบรรยายเชิงลึก (Dense Semantic Description)
-* **รูปแบบการแปลงเป็น HTML:**
-  ```html
-  <figure class="vision-image-view" id="fig-img-001">
-    <div class="image-wrapper">
-      <img src="/storage/resources/architecture-diagram.png" alt="Architecture Diagram" />
-    </div>
-    <figcaption class="ai-vision-caption" id="fig-img-001-desc">
-      <h4>คำบรรยายภาพโดย AI Vision:</h4>
-      <p id="fig-img-001-p1">แผนภาพแสดงสถาปัตยกรรมไมโครเซอร์วิส โดยมี API Gateway อยู่ตรงกลาง...</p>
-    </figcaption>
-  </figure>
+### 2.1 WebSocket Presence Gateway
+* ทุกครั้งที่ผู้ใช้เปิดดู Resource ระบบ Next.js จะเชื่อมต่อ WebSocket เข้าสู่ Channel:
+  `ws://api.domain.com/ws/projects/{project_id}/resources/{resource_id}`
+* **Payload โครงสร้างข้อมูล Presence:**
+  ```json
+  {
+    "user_id": "uuid-user-a",
+    "user_name": "Somchai",
+    "user_color": "#4F46E5",
+    "cursor": { "anchor_id": "p-014", "offset": 12 },
+    "active_element_id": "p-014",
+    "ai_agent_status": {
+      "is_active": true,
+      "target_anchor_id": "p-014",
+      "action_description": "กำลังเรียบเรียงข้อความใหม่..."
+    }
+  }
   ```
-  *คำบรรยายนี้จะถูกนำไปตัดเป็น Chunk และสร้าง Vector Embedding ทำให้ระบบสามารถค้นหาและตอบคำถามจากภาพได้ 100%*
+
+### 2.2 Client-Side Collaborative Editor
+* ใช้ **Tiptap / ProseMirror** หรือ **Lexical** ร่วมกับส่วนขยาย Collaboration
+* เมื่อเพื่อนร่วมทีมเลื่อนเคอร์เซอร์ หรือมี AI Agent กำลังเจนเนอเรตข้อความ ระบบจะวาด Custom Floating Cursor และกรอบสีระบุชื่อผู้ใช้หรือ AI บนหน้าจอทันที
 
 ---
 
-## 3. มาตรฐานระบบอ้างอิงสากล (Universal Citation Protocol)
+## 3. กลไก In-Place Editing & Explicit Save
 
-เพื่อให้ทุกคำตอบของ AI สามารถชี้พิกัดกลับไปยังแหล่งข้อมูลได้อย่างแม่นยำ ไม่ว่าข้อมูลนั้นจะอยู่ในฟอร์แมตใด:
+เพื่อไม่ให้การพิมพ์เล่นหรือข้อความที่ยังไม่สมบูรณ์หลุดเข้าไปในระบบ Knowledge Base:
 
-### โครงสร้าง Universal Anchor Tag
-`[Ref: <resource_name> #<anchor_id>]`
-
-| ชนิดข้อมูล | ตัวอย่าง Citation Tag | พิกัดการกระโดดไปยัง HTML Reader |
-| :--- | :--- | :--- |
-| **Document** | `[Ref: manual.docx #p-042]` | เลื่อนจอไปยังย่อหน้าที่ 42 และไฮไลต์ข้อความ |
-| **Presentation** | `[Ref: pitch_deck.pptx #slide-04]` | พลิกสไลด์ไปยังแผ่นที่ 4 พร้อมโฟกัสเนื้อหา |
-| **Spreadsheet** | `[Ref: profit_2026.xlsx #sheet1-R8C3]` | สกรอลล์ตารางไปยังแถวที่ 8 คอลัมน์ที่ 3 พร้อมตีกรอบสี |
-| **Image** | `[Ref: network_topo.png #fig-img-001-p1]` | เปิดภาพต้นฉบับพร้อมไฮไลต์คำบรรยายของ AI ด้านล่าง |
+```
+[User พิมพ์แก้ไขบนหน้าจอ]
+           │
+           ▼
+[Local Dirty State (Unsaved Changes)]
+- แสดงแถบเตือนสีส้ม "มีข้อมูลที่ยังไม่ได้บันทึก"
+- ยังไม่ส่งข้อมูลไปอัปเดต PostgreSQL หรือ RAG Index
+           │
+           ▼
+[User คลิกปุ่ม '💾 บันทึกการเปลี่ยนแปลง']
+           │
+           ▼
+[Modal ยืนยัน: ให้ผู้ใช้กรอก Commit Message]
+           │
+           ▼
+[POST /api/v1/.../save-confirmed]
+- บันทึก Snapshot ลงตาราง `resource_versions`
+- บันทึกการกระทำลง `resource_audit_logs`
+- อัปเดตตาราง `resources`
+           │
+           ▼
+[Enqueue Background Knowledge Sync]
+- Worker นำข้อความเวอร์ชันใหม่ไปคำนวณ Chunks & Embeddings ใหม่
+- ตรวจสอบคำศัพท์ใหม่เข้า Living Glossary และเชื่อมโยง Knowledge Graph
+```
 
 ---
 
-## 4. สถาปัตยกรรม Pre-flight Impact Analysis Engine (ก่อนลบข้อมูล)
+## 4. Human-in-the-Loop AI Proposal & Diff Engine
 
-เมื่อผู้ใช้ส่งคำขอตรวจสอบผลกระทบก่อนลบ Resource:
+กลไกควบคุมเมื่อสั่งให้ AI แก้ไขเอกสาร:
+
+```mermaid
+flowchart LR
+    A[AI Agent ส่ง Draft ข้อความใหม่] --> B[Diff Engine: คำนวณความต่างแบบคำต่อคำ]
+    B --> C[สร้าง Proposed Record ใน pending_ai_proposals]
+    C --> D[Next.js เรนเดอร์ Inline Diff: สีแดง=ตัดออก, สีเขียว=เพิ่มเข้า]
+    D --> E{User เจ้าของ Agent ตรวจทาน}
+    E -- ปฏิเสธ --> F[ลบ Pending Proposal คืนค่าเดิม]
+    E -- ยอมรับ --> G[Commit Change ลง Resource + สร้าง Audit Log 'AI Edit']
 ```
-[User กดลบ Resource X]
-         │
-         ▼
-[Pre-flight Impact Analyzer Service]
-         ├─ 1. Query: ค้นหาคำศัพท์ใน project_glossaries ที่มี source_resource_ids มี X เพียงไฟล์เดียว
-         ├─ 2. Query: ค้นหาโหนดใน knowledge_graph_nodes ที่เชื่อมกับ X
-         ├─ 3. Query: ค้นหา knowledge_syntheses ที่อ้างอิง X
-         │
-         ▼
-[Generate Impact Report JSON]
-{
-  "resource_id": "...",
-  "resource_name": "quarterly_report.docx",
-  "affected_glossaries_count": 4,
-  "affected_glossary_terms": ["EBITDA", "Churn Rate", "LTV", "CAC"],
-  "affected_nodes_count": 7,
-  "affected_syntheses_count": 2
-}
-         │
-         ▼
-[Frontend แสดง Impact Modal เตือนผู้ใช้ก่อนยืนยัน]
-```
+
+---
+
+## 5. Audit Trail & Version History Engine
+
+1. **Immutable Version Snapshots:**  
+   ทุกครั้งที่มีการบันทึก (ทั้ง Manual Save หรือ AI Confirmed Edit) ระบบจะเก็บ Full HTML Snapshot พร้อม Diff Patch ลงตาราง `resource_versions`
+2. **Audit Action Log:**  
+   ตาราง `resource_audit_logs` จะเก็บบันทึกว่าใครทำอะไร เมื่อไหร่ เช่น:
+   - `Action: MANUAL_EDIT | Actor: Somchai | Note: ปรับราคาในตาราง`
+   - `Action: AI_EDIT_CONFIRMED | Actor: Somchai (via AI Agent) | Note: แปลงเป็นภาษาทางการ`
+   - `Action: ROLLBACK | Actor: Admin | Note: ย้อนกลับสู่ v1.0`
+3. **Audit Exemption Rule (ข้อยกเว้น):**  
+   การสนทนาใน Private AI Chat จะไม่ถูกส่งเข้า Audit Logger เพื่อรักษาความเป็นส่วนตัวและเพราะไม่ได้เปลี่ยนแปลงสถานะของ Resource ส่วนรวม
