@@ -1,6 +1,6 @@
 # PostgreSQL Database Schema & Data Models 🗄️
 
-เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **ตาราง Shared Temp Drafts (รีเฟรชไม่หาย)**, **Canonical Living Glossary (ลดความซ้ำซ้อนของคำศัพท์)**, **ตารางตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts)**, และ **Full Version History**
+เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **ตารางการอ้างอิงข้าม Resource (Resource Transclusions)**, **Shared Temp Drafts (รีเฟรชไม่หาย)**, **Canonical Living Glossary**, **ตารางตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts)**, และ **6 รูปแบบ Resource**
 
 ---
 
@@ -20,7 +20,7 @@ erDiagram
     
     PROJECTS ||--o{ PROJECT_MEMBERS : "has members"
     PROJECTS ||--o{ FOLDERS : "shared folders"
-    PROJECTS ||--o{ RESOURCES : "shared multi-format resources"
+    PROJECTS ||--o{ RESOURCES : "shared multi-format resources (6 types)"
     PROJECTS ||--o{ PROJECT_RULES : "governed by rules"
     PROJECTS ||--o{ PROJECT_GLOSSARIES : "canonical living glossary"
     PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes"
@@ -39,8 +39,8 @@ erDiagram
     RESOURCES ||--o{ RESOURCE_AUDIT_LOGS : "audited by"
     RESOURCES ||--o{ RESOURCE_TEMP_DRAFTS : "has temp blocks"
     RESOURCES ||--o{ PENDING_AI_PROPOSALS : "has proposals"
-    RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in A"
-    RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in B"
+    RESOURCES ||--o{ RESOURCE_TRANSCLUSIONS : "parent resource embeds target"
+    RESOURCES ||--o{ RESOURCE_TRANSCLUSIONS : "target resource is embedded by parent"
     
     PROJECT_GLOSSARIES ||--o{ PROJECT_GLOSSARIES : "canonical parent (canonical_id)"
     
@@ -54,7 +54,29 @@ erDiagram
 
 ## 2. นิยามโครงสร้างตาราง (DDL & Table Specifications)
 
-### 2.1 ตารางจัดการดราฟต์ชั่วคราว (Shared Temp Drafts Table)
+### 2.1 ตารางการอ้างอิงและฝังข้ามไฟล์ (Resource Transclusions Table)
+
+#### `resource_transclusions` (ติดตามการฝังกราฟ/ตาราง/สไลด์ข้ามไฟล์แบบ Single Source of Truth)
+```sql
+CREATE TABLE resource_transclusions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parent_resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE, -- เอกสารที่นำไปแปะ (เช่น เอกสารระบบ.doc)
+    target_resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE, -- ทรัพยากรต้นทาง (เช่น system_architecture.graph)
+    target_anchor_id VARCHAR(100),            -- พิกัดเจาะจง (เช่น "slide-3" หรือ "A1:D10" หรือ NULL สำหรับทั้งไฟล์)
+    transclusion_mode VARCHAR(50) NOT NULL DEFAULT 'component'
+        CHECK (transclusion_mode IN ('component', 'inline_link', 'metric_card')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (parent_resource_id, target_resource_id, target_anchor_id)
+);
+
+CREATE INDEX idx_transclusions_target ON resource_transclusions(target_resource_id);
+CREATE INDEX idx_transclusions_parent ON resource_transclusions(parent_resource_id);
+```
+
+---
+
+### 2.2 ตารางจัดการดราฟต์ชั่วคราว (Shared Temp Drafts Table)
 
 #### `resource_temp_drafts` (เก็บเนื้อหาที่แก้ไขแล้วแต่ยังไม่ได้ Commit เป็นเวอร์ชันถาวร)
 ```sql
@@ -74,7 +96,7 @@ CREATE INDEX idx_temp_drafts_resource ON resource_temp_drafts(resource_id);
 
 ---
 
-### 2.2 ตาราง Living Glossary แบบ Canonical Term (ลดความซ้ำซ้อน)
+### 2.3 ตาราง Living Glossary แบบ Canonical Term (ลดความซ้ำซ้อน)
 
 #### `project_glossaries`
 ```sql
@@ -101,7 +123,7 @@ CREATE INDEX idx_glossary_canonical ON project_glossaries(canonical_id);
 
 ---
 
-### 2.3 ตารางตรวจจับข้อขัดแย้ง และติดตามสถานะความรู้
+### 2.4 ตารางตรวจจับข้อขัดแย้ง และติดตามสถานะความรู้
 
 #### `knowledge_conflicts`
 ```sql
@@ -141,7 +163,7 @@ CREATE TABLE project_knowledge_sync_states (
 
 ---
 
-### 2.4 ตารางโครงสร้างหลัก (Resources, Versions & Audit Logs)
+### 2.5 ตารางโครงสร้างหลัก (Resources, Versions & Audit Logs)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -193,7 +215,7 @@ CREATE TABLE resources (
     folder_id UUID REFERENCES folders(id) ON DELETE SET NULL,
     name VARCHAR(255) NOT NULL,
     format_type VARCHAR(50) NOT NULL 
-        CHECK (format_type IN ('document', 'presentation', 'table', 'image', 'graph')),
+        CHECK (format_type IN ('document', 'presentation', 'table', 'image', 'graph', 'code')),
     original_file_extension VARCHAR(20),
     storage_path TEXT,
     raw_text TEXT NOT NULL,
