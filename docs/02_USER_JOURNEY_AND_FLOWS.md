@@ -1,146 +1,86 @@
 # User Journey & Interaction Workflows 🗺️
 
-เอกสารฉบับนี้อธิบายเส้นทางประสบการณ์ผู้ใช้ (User Journey) และแผนภาพลำดับขั้นตอนการทำงาน (Sequence & Flowcharts) ฉบับปรับปรุง เพื่อรองรับ **In-Place Editable HTML Viewers**, **ระบบกดยืนยันบันทึกแบบ Explicit Save**, **Human-in-the-Loop AI Proposal Review**, **Real-time Multiplayer Collaboration** และ **Full Audit Trail**
+เอกสารฉบับนี้อธิบายเส้นทางประสบการณ์ผู้ใช้ (User Journey) และแผนภาพลำดับขั้นตอนการทำงาน (Sequence & Flowcharts) ฉบับปรับปรุง เพื่อรองรับ **Block-Level Locking พร้อม Heartbeat Timeout**, **Incremental Delta Knowledge Sync**, และ **Smart Knowledge Graph Filters**
 
 ---
 
-## 1. ผังรวมขั้นตอนการแก้ไขและการร่วมมือกัน (Collaborative Editing Flow)
+## 1. ลำดับการล็อกระดับบล็อก และกลไก Heartbeat Timeout (Lock Heartbeat Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor UserA as ผู้แก้ไข (User A)
+    actor UserB as เพื่อนร่วมทีม (User B)
+    participant UI_A as Next.js (User A)
+    participant WS as WebSocket Collaboration Server
+    participant Redis as Redis Lock Store
+
+    UserA->>UI_A: คลิกแก้ไขบล็อก <p id="p-002">
+    UI_A->>WS: acquire_block_lock(res_id, "p-002")
+    WS->>Redis: SET lock:res_id:p-002 user_A EX 60
+    WS-->>UserB: บรอดแคสต์: บล็อก "p-002" ถูกล็อกโดย User A
+
+    loop ทุกๆ 15 วินาที (Heartbeat Loop)
+        UI_A->>WS: ping_lock_heartbeat(res_id, "p-002")
+        WS->>Redis: EXPIRE lock:res_id:p-002 60 (ต่ออายุ Lock ไปอีก 60 วิ)
+    end
+
+    alt กรณี User A ปิดแท็บ หรือเน็ตหลุดกะทันหัน
+        Note over UI_A,WS: สัญญาณ Heartbeat ขาดหายไป
+        Note over Redis: เวลาผ่านไป 60 วินาที... Key หมดอายุ (Expired)
+        WS-->>UserB: บรอดแคสต์: บล็อก "p-002" หลุดจากการล็อกแล้ว (Auto-Unlocked)
+    else กรณีปกติ (User A บันทึกและ Unfocus)
+        UserA->>UI_A: กดบันทึกบล็อก และคลิกเมาส์ออก (Unfocus)
+        UI_A->>WS: release_block_lock(res_id, "p-002")
+        WS->>Redis: DEL lock:res_id:p-002
+        WS-->>UserB: อัปเดตข้อความใหม่ + ปลดล็อกบล็อก
+    end
+```
+
+---
+
+## 2. ลำดับการซิงค์ความรู้แบบประหยัด Token: Incremental Delta Sync
 
 ```mermaid
 flowchart TD
-    subgraph CollaborativeSession[1. เข้าสู่หน้าแก้ไข Resource แบบ Real-time]
-        Open[User เปิดดู Resource] --> WS[เชื่อมต่อ WebSocket Presence Gateway]
-        WS --> Cursor[เห็น Live Cursors ของเพื่อนร่วมทีม & ตำแหน่งที่กำลังโฟกัส]
-    end
-
-    subgraph UserEditing[2. การแก้ไขด้วยตนเอง Manual Editing]
-        Cursor --> Type[User พิมพ์แก้ไขข้อความ/ตาราง/สไลด์]
-        Type --> Unsaved[แสดงสถานะ Unsaved Changes]
-        Unsaved --> ClickSave[User กดปุ่ม 'บันทึกการเปลี่ยนแปลง']
-        ClickSave --> Modal[Confirmation Modal: กรอก Commit Message]
-        Modal --> Confirmed[กดยืนยันการบันทึก]
-        Confirmed --> Audit[บันทึกลง Version History & Audit Log]
-        Confirmed --> BGJob[ทริกเกอร์ Background Job อัปเดต Knowledge]
-    end
-
-    subgraph AIProposal[3. การแก้ไขผ่าน AI Agent]
-        Chat[User สั่ง AI ใน Private Chat: 'ช่วยแก้ข้อความนี้'] --> AIStream[AI สตรีม Proposed Changes]
-        AIStream --> LockUI[แสดงป้าย AI Presence เหนือย่อหน้าเป้าหมาย]
-        LockUI --> DiffView[แสดง Diff Preview: แดง=เดิม, เขียว=ใหม่]
-        DiffView --> Decision{User เจ้าของ Agent ตัดสินใจ}
-        Decision -- ❌ Reject --> Revert[ยกเลิกข้อเสนอ คืนค่าเดิม]
-        Decision -- ✅ Confirm Change --> CommitAI[บันทึกลง Shared Resource พร้อม Audit Log]
-        CommitAI --> BGJob
-    end
-```
-
----
-
-## 2. ลำดับขั้นตอนการทำงานอย่างละเอียด (Detailed Workflows)
-
-### 2.1 โฟลว์การแก้ไขเอกสารด้วยตนเอง และการกดยืนยันบันทึก (Explicit Save Flow)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as สมาชิกผู้แก้ไข (User A)
-    actor Team as เพื่อนร่วมทีม (User B)
-    participant UI as Next.js Editor
-    participant WS as WebSocket Collaboration Server
-    participant API as FastAPI Backend
-    participant DB as PostgreSQL
-    participant Worker as Background Worker
-
-    User->>UI: เปิดดูเอกสาร "architecture_spec.docx"
-    UI->>WS: เชื่อมต่อ Room (resource_id)
-    WS-->>Team: บรอดแคสต์: User A กำลังดูเอกสารนี้
-
-    User->>UI: พิมพ์แก้ไขย่อหน้าที่ 2
-    UI->>WS: อัปเดตพิกัด Live Cursor และตำแหน่งกำลังพิมพ์
-    WS-->>Team: แสดง Cursor ของ User A พร้อมกรอบสีรอบย่อหน้าที่ 2
-
-    Note over UI,User: UI แสดงสถานะ "Unsaved Changes" (ยังไม่บันทึกอัตโนมัติ)
-    User->>UI: คลิกปุ่ม "💾 บันทึกการเปลี่ยนแปลง"
-    UI->>User: เปิด Modal: "ยืนยันการบันทึก พร้อมระบุบันทึกย่อ (Commit Note)"
-    User->>UI: กรอกบันทึก: "ปรับปรุงข้อกำหนด Database" และกดยืนยัน
-
-    UI->>API: PUT /api/v1/projects/{id}/resources/{res_id} (พร้อม HTML ใหม่ + Commit Note)
-    API->>DB: บันทึกข้อมูลลง resources (shared)
-    API->>DB: บันทึกประวัติลง resource_versions และ resource_audit_logs
-    API->>Worker: Enqueue งาน Background Sync Knowledge (Glossary & Graph)
-    API-->>UI: ยืนยันบันทึกสำเร็จ (200 OK)
+    A[ผู้ใช้คลิกปุ่ม '⚡ อัปเดต Knowledge'] --> B[ระบบดึงรายชื่อไฟล์ใน modified_resources]
+    B --> C[เปรียบเทียบ Diff กับเวอร์ชันก่อนหน้า: สกัด Added Text & Deleted Text]
     
-    WS-->>Team: บรอดแคสต์: เอกสารอัปเดตเวอร์ชันใหม่แล้ว
-    Worker->>DB: สกัดคำศัพท์ใหม่ และอัปเดต Knowledge Graph ในพื้นหลัง
-    Worker-->>UI: แจ้งเตือน: องค์ความรู้ใน Knowledge Hub อัปเดตเรียบร้อย
+    C --> D[1. สกัดเฉพาะ Added Text]
+    D --> E[ส่งเฉพาะข้อความที่เพิ่มเข้าสู่ LLM เพื่อดึง Glossary & Graph Nodes ใหม่]
+    E --> F[Upsert เข้าตาราง project_glossaries และ knowledge_graph_nodes]
+
+    C --> G[2. ตรวจสอบ Deleted Text]
+    G --> H[ค้นหาคำศัพท์/โหนดที่ข้อความนี้เคยอ้างอิง]
+    H --> I{ยังมีเอกสารอื่นอ้างอิงอยู่หรือไม่?}
+    I -- มีเอกสารอื่นอ้างอิง -- --> J[คงไว้ตามปกติ]
+    I -- ไม่มีใครอ้างอิงแล้ว -- --> K[ปลดการเชื่อมโยง หรือลบออก (Pruning)]
+
+    F --> L[คำนวณ Embeddings เฉพาะ Chunks ที่เปลี่ยนแปลง]
+    K --> L
+    L --> M[ล้าง modified_resources และตั้ง is_stale = false]
+    M --> N[แจ้งเตือน Frontend: การซิงค์เสร็จสิ้น (ใช้ Token น้อยลง 90%+)]
 ```
 
 ---
 
-### 2.2 โฟลว์การตรวจทานการแก้ไขจาก AI Agent (Human-in-the-Loop Review Flow)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as สมาชิกผู้สั่ง AI (User A)
-    actor Team as เพื่อนร่วมทีม (User B)
-    participant UI as Next.js Workspace
-    participant WS as WebSocket Gateway
-    participant API as FastAPI Backend
-    participant LLM as AI Engine
-
-    User->>UI: สั่งในช่องแชท: "ช่วยเขียนย่อหน้าข้อสรุปใหม่ให้เป็นทางการขึ้น"
-    UI->>API: POST /api/v1/chat/propose-edit
-    API->>LLM: ประมวลผลร่างข้อความใหม่
-    
-    UI->>WS: ส่งสัญญาณ AI Presence: User A's Agent กำลังแก้ข้อสรุป
-    WS-->>Team: แสดงป้าย "🤖 AI ของ User A กำลังเรียบเรียงข้อความนี้..."
-
-    LLM-->>UI: ส่งผลลัพธ์ข้อความที่แก้ไขกลับมา
-    UI->>UI: เรนเดอร์แท่นตรวจทาน (Inline Diff Preview Bar)
-    Note over UI,User: แสดงข้อความเดิมขีดฆ่าสีแดง + ข้อความใหม่ไฮไลต์สีเขียว<br/>พร้อมปุ่ม [Confirm Changes] และ [Discard]
-
-    alt ผู้ใช้กด "Confirm Changes"
-        User->>UI: คลิก "✅ Confirm Changes"
-        UI->>API: POST /api/v1/resources/{id}/proposals/accept
-        API->>API: บันทึกข้อความใหม่ลง Resource
-        API->>API: เพิ่ม Audit Log: "User A (via AI Agent) ปรับปรุงย่อหน้าข้อสรุป"
-        API-->>UI: ยืนยันสำเร็จ และปลดสถานะ AI Presence
-        WS-->>Team: บรอดแคสต์: User A ได้ยอมรับการแก้ไขจาก AI เรียบร้อย
-    else ผู้ใช้กด "Discard"
-        User->>UI: คลิก "❌ Discard"
-        UI->>UI: คืนค่าข้อความดั้งเดิม และปลดแถบ AI Presence
-    end
-```
-
----
-
-### 2.3 โฟลว์การดูประวัติการแก้ไขและ Audit Log (Version History & Rollback)
+## 3. ลำดับการใช้งานตัวกรอง Smart Knowledge Graph (Graph Filter Flow)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as สมาชิกในทีม
-    participant UI as Next.js History Panel
+    participant UI as Next.js Graph Viewer
     participant API as FastAPI Backend
     participant DB as PostgreSQL
 
-    User->>UI: คลิกแท็บ "ประวัติการแก้ไข (Audit & History)" ในหน้าเอกสาร
-    UI->>API: GET /api/v1/projects/{id}/resources/{res_id}/versions
-    API->>DB: ดึงรายการเวอร์ชันทั้งหมด (v1.0, v1.1, v1.2) พร้อมชื่อผู้แก้และ Audit Log
-    API-->>UI: คืนค่า Version List
+    User->>UI: เปิดหน้า Knowledge Graph Hub (พบโหนด 150 โหนด หนาแน่นเกินไป)
+    User->>UI: ปรับตัวกรอง:
+    Note over UI,User: - เลือกโฟลเดอร์: "Clinical Trials"<br/>- เลือก Node Type: "CONCEPT"<br/>- ปรับ Hub Slider: เส้นเชื่อม >= 3 เส้น
     
-    UI->>User: แสดง Timeline ประวัติการแก้ไข
-    User->>UI: คลิกเลือก "ดูเปรียบเทียบ v1.0 กับ v1.2"
-    UI->>API: GET /api/v1/projects/{id}/resources/{res_id}/diff?v_from=1.0&v_to=1.2
-    API-->>UI: คืนค่า Side-by-side Diff JSON
-    UI->>User: เรนเดอร์หน้าจอเปรียบเทียบสิ่งที่เพิ่ม/ลบ
+    UI->>API: GET /api/v1/projects/{id}/knowledge-graph?folder_id=...&node_type=CONCEPT&min_degree=3
+    API->>DB: Query โหนดและเส้นเชื่อมตามเงื่อนไข
+    API-->>UI: คืนค่าเฉพาะ 18 โหนดหลักที่เป็นแกนกลาง
     
-    opt ต้องการย้อนกลับ (Rollback)
-        User->>UI: คลิกปุ่ม "ย้อนกลับสู่เวอร์ชัน v1.0"
-        UI->>User: แสดง Modal ยืนยันการ Rollback
-        User->>UI: กดยืนยัน
-        UI->>API: POST /api/v1/projects/{id}/resources/{res_id}/rollback
-        API-->>UI: สร้างเวอร์ชันใหม่ที่เป็นเนื้อหาของ v1.0 พร้อม Audit Log: "Rollback by User"
-    end
+    UI->>User: เรนเดอร์กราฟใหม่ที่สะอาดตา คมชัด และตรงประเด็นทันที
 ```

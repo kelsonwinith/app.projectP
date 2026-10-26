@@ -1,70 +1,78 @@
 # CogniNest (SynapseLM) 🧠
-### Universal Multi-Format AI Knowledge & Real-time Collaborative Resource OS
+### Universal Multi-Format AI Knowledge & Block-Locked Collaborative Resource OS
 
 > **Next-generation Source-Grounded Multi-Modal Knowledge Engine & Living Collaborative Workspace**  
-> ผสานแนวคิดของ NotebookLM เข้ากับโครงสร้าง Shared Resource, Universal In-Place Editable HTML Viewers, Multiplayer Real-time Collaboration (Live Cursors & AI Presence), Human-in-the-Loop Change Approval, Full Version Audit Log, Living Glossary และ Interactive Knowledge Graph
+> ผสานแนวคิดของ NotebookLM เข้ากับโครงสร้าง Shared Resource, Block-Level Exclusive Locking พร้อมระบบ Heartbeat Timeout ป้องกัน Lock ค้าง, Incremental Delta Knowledge Sync (สกัดเฉพาะส่วนต่างประหยัด Token), Smart Knowledge Graph Filtering, Tag-based Living Glossary, Human-in-the-Loop AI Review, Full Audit Trail, และ Blank Canvas Onboarding
 
 ---
 
 ## 📌 สรุปภาพรวมโปรเจกต์ (Executive Summary)
 
-**CogniNest** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user โดยผสาน **การแก้ไขเอกสารร่วมกันแบบ Real-time (Multiplayer Collaboration)** และ **การควบคุมผลลัพธ์ของ AI อย่างเข้มงวด (Human-in-the-Loop Approval)**:
+**CogniNest** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user ที่ให้ความสำคัญกับ **ความถูกต้องของข้อมูล (Data Integrity)**, **การทำงานร่วมกันที่ไร้การชนกัน (Conflict-Free Collaboration)**, และ **การประหยัดต้นทุน Token ด้วยสถาปัตยกรรม Incremental Delta Sync**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                      REAL-TIME COLLABORATIVE SHARED WORKSPACE                          │
 ├───────────────────────────────────────────┬────────────────────────────────────────────┤
 │               📂 RESOURCE                 │                🧠 KNOWLEDGE                │
-│       (แก้ไขได้ทันที + Realtime Cursors)   │       (องค์ความรู้ที่ AI ตกผลึกร่วมกัน)      │
+│       (Block-Locked Editing + Audit Log)  │       (องค์ความรู้ที่ AI ตกผลึกร่วมกัน)      │
 ├───────────────────────────────────────────┼────────────────────────────────────────────┤
-│ • Universal Multi-Format Editable Viewers │ • Living Project Glossary (Interactive)    │
-│   (Document, Presentation, Table, Visual) │ • Dynamic Knowledge Graph (Nodes & Edges)  │
-│ • Real-time Multiplayer Presence:         │ • Multi-format Key Takeaways & Fact Base   │
-│   - แสดง Live Cursors ของสมาชิกในทีม       │ • Auto-updated via Background Job หลังกด   │
-│   - แสดงแถบ AI Agent Presence ที่กำลังแก้  │   บันทึก Resource สำเร็จ                   │
-│ • Manual Save & Confirm Trigger:          │ • Deletion Impact Assessment Preview       │
-│   (แก้ไขแล้วต้องกดยืนยันบันทึกด้วยตัวเอง)    │                                            │
-│ • Human-in-the-loop AI Diff Review:       │                                            │
-│   (ผลลัพธ์จาก AI ต้องกดยอมรับก่อนบันทึกจริง)│                                            │
-│ • Full Audit Trail & Version History      │                                            │
-│   (บันทึกประวัติการเปลี่ยนแปลงแบบ Git-like)│                                            │
+│ • Universal Multi-Format Editable Viewers │ • Living Project Glossary (Tag-based Poly) │
+│ • Block-Level Exclusive Lock:             │ • Smart Filtered Knowledge Graph:          │
+│   - ใครกดแก้บล็อกไหน บล็อกนั้นจะถูก Lock  │   - กรองตาม Folder / Resource ต้นทาง       │
+│   - ป้องกัน Lock ค้างด้วย Heartbeat (60s) │   - กรองตาม Node Type (Concept/Entity/Org) │
+│   - คนอื่นไม่เห็นการพิมพ์สดๆ (Isolated)   │   - กรองตาม Tag [Tech], [Legal]            │
+│   - ต้องกด 'บันทึก' และ 'Unfocus'         │   - Slider คัดกรอง Hub Nodes (ความเชื่อมโยง)│
+│     คนอื่นถึงจะเห็นและเข้าแก้ต่อได้        │ • Incremental Delta Knowledge Sync:        │
+│ • Full Audit Trail & Version History      │   - ผู้ใช้กดปุ่ม 'Update Knowledge'        │
+│   (บันทึกประวัติละเอียด ย้อนกลับได้)      │   - AI สแกนเฉพาะไฟล์ที่แก้และส่วนต่าง (Diff)│
+│                                           │   - เพิ่ม/ลบเฉพาะส่วนที่กระทบ (ประหยัด Token)│
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
                                           │
                                           ▼
               ┌─────────────────────────────────────────────────────────┐
               │  ⚙️ PROJECT RULES ENGINE & 💬 PRIVATE 1-USER CHAT SESSION│
-              │  - สนทนาและสั่งงาน AI ส่วนตัว (ไม่ปนกับ Audit Log)       │
-              │  - สั่ง AI แก้ไขหรือสร้างเอกสาร -> ต้องกด Confirm Change │
-              │  - อ้างอิงแหล่งที่มาได้ลึกระดับ (ย่อหน้า/สไลด์/แถว/รูป) │
+              │  - Default Scope: ทั้งโปรเจกต์ (เลือกเฉพาะเอกสารได้)     │
+              │  - Blank Canvas: เริ่มคุยสั่งสร้างเอกสารจากศูนย์ได้ทันที│
+              │  - AI Propose -> User Confirm Changes -> Save to Shared │
               └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🌟 จุดเด่นสำคัญที่เพิ่มเข้ามา (Collaborative & Editing Features)
+## 🌟 จุดเด่นสำคัญที่ได้รับการขัดเกลาเพื่อประสิทธิภาพสูงสุด (Core Refinements)
 
-1. **In-Place Editable HTML Viewers (เปิดปุ๊บ แก้ไขได้ทันที):**
-   - ผู้ใช้เปิดดู Resource ใดๆ สามารถพิมพ์แก้ไขเนื้อหาในหน้าเว็บได้ทันที (WYSIWYG Semantic Editor)
-   - **Explicit Manual Save & Confirmation:** ไม่ Auto-save โดยไม่ตั้งใจ ผู้ใช้ต้องกด "บันทึก" และกดยืนยันก่อน ระบบจึงจะรัน **Background Job** ไปคำนวณและอัปเดต Knowledge (Glossary, Graph) รอบใหม่
-2. **Human-in-the-Loop AI Change Review (ตรวจทานผลงาน AI ก่อน Commit):**
-   - เมื่อผู้ใช้สั่งให้ AI แก้ไขหรือเรียบเรียงเอกสาร ระบบจะแสดงผลเป็น **Diff Preview (เทียบสิ่งที่เพิ่ม/ลบ)**
-   - สมาชิกผู้สั่งต้องเป็นคนกดปุ่ม **"Confirm Change" (ยอมรับการแก้ไข)** ข้อมูลจึงจะถูกบันทึกลง Resource จริง
-3. **Real-time Multiplayer Collaboration & AI Presence:**
-   - เห็นตำแหน่งเคอร์เซอร์ (Live Cursors) และแถบสีของเพื่อนร่วมทีมว่าใครกำลังอ่านหรือพิมพ์ตรงจุดไหน
-   - **AI Agent Presence:** แสดงสถานะชัดเจนว่า *"AI ของ User A กำลังร่างข้อความในย่อหน้าที่ 3..."* ป้องกันการแก้ไขซ้อนทับกัน
-4. **Full Resource Audit Trail & Version History (ประวัติการแก้ไขครบ 100%):**
-   - บันทึกทุกความเคลื่อนไหว: ใครแก้, แก้เมื่อไหร่, ข้อความก่อน-หลังเป็นอย่างไร ย้อนเวอร์ชันได้ตลอดเวลา
-   - การถามตอบใน Private Chat จะไม่ถูกนับเป็น Audit Log (เพราะไม่มีผลกระทบต่อ Resource ส่วนรวม)
+1. **ระบบล็อกระดับบล็อกพร้อมกลไก Heartbeat Timeout (Lock Heartbeat 60s):**
+   - เมื่อผู้ใช้เข้าแก้ไขบล็อก ระบบจะทำการล็อกใน Redis โดยมีอายุ (TTL) 60 วินาที
+   - เบราว์เซอร์จะส่งสัญญาณ Heartbeat ทุก 15 วินาทีเพื่อต่ออายุตราบใดที่ยังแก้ไขอยู่
+   - หากผู้ใช้ปิดแท็บ เน็ตหลุด หรือเครื่องดับ ระบบจะ **ปลดล็อกอัตโนมัติภายใน 60 วินาที** ป้องกันปัญหาบล็อกค้างถาวร
+2. **ระบบซิงค์ความรู้แบบ Incremental Delta Sync (ประหยัด Token สูงสุด):**
+   - เมื่อผู้ใช้กดปุ่ม **"⚡ อัปเดต Knowledge"** ระบบจะไม่สแกนใหม่ทั้ง 200 ไฟล์
+   - Background Job จะนำเฉพาะไฟล์ที่อยู่ในรายการแก้ไข (`modified_resources`) มาเปรียบเทียบ Diff ส่วนต่าง:
+     - ส่วนข้อความที่เพิ่มขึ้น ➔ สกัดคำศัพท์และโหนดใหม่เข้าไปเพิ่ม
+     - ส่วนข้อความที่ถูกตัดออก ➔ ตรวจสอบและปลดการเชื่อมโยงคำศัพท์และโหนดเก่าออก
+   - ช่วยประหยัด Token ได้มากกว่า 90% และประมวลผลเสร็จในหลักวินาที
+3. **ตัวกรองมโนทัศน์อัจฉริยะ (Smart Knowledge Graph Filters):**
+   - แก้ปัญหากราฟพันกันเป็นใยแมงมุม (Spaghetti Ball) ด้วย 5 ตัวกรองคุณภาพ:
+     1. **Filter by Folder / Resource:** ดูกราฟเฉพาะโฟลเดอร์ เช่น โฟลเดอร์ "การเงิน" หรือ "การแพทย์"
+     2. **Filter by Node Type:** แยกดูเฉพาะ `CONCEPT` (มโนทัศน์), `ENTITY` (เทคโนโลยี/เครื่องมือ), หรือ `ORGANIZATION`
+     3. **Filter by Domain Tag:** เลือกเฉพาะแท็กที่สนใจ เช่น `[Software]`, `[Pharmacy]`, `[Legal]`
+     4. **Hub Importance Slider:** แถบเลื่อนปรับระดับความสำคัญ (กรองแสดงเฉพาะโหนดที่มีเส้นเชื่อม >= N เส้น)
+     5. **Verification State:** แสดงเฉพาะโหนดที่ทีมงานมนุษย์กดยืนยันแล้ว (Verified) หรือโหนดที่ AI สกัดมา
+4. **พจนานุกรม Living Glossary จำแนกด้วย Tags:**
+   - คำศัพท์เดียวกันแต่คนละความหมายถูกจัดระเบียบด้วย Tags (เช่น `API [Tech]` vs `API [Pharmacy]`)
+5. **Private 1-User Chat & Human-in-the-Loop Review:**
+   - แชทส่วนตัวไม่ปะปนกับผู้อื่น และเมื่อ AI เสนอการแก้ไขเอกสาร ผู้ใช้ต้องกด Confirm Changes ก่อนบันทึกลงคลังส่วนรวมเสมอ
 
 ---
 
-## 📚 สารบัญชุดเอกสารสเปกโปรเจกต์ (Documentation Suite)
+## 📚 สารบัญเอกสารสเปกโปรเจกต์ (Documentation Suite)
 
 | เอกสาร | รายละเอียด |
 | :--- | :--- |
-| **[01_PRD.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/01_PRD.md)** | Product Requirements: In-place Editing, Human-in-the-Loop Review, Real-time Presence, Full Audit Log |
-| **[02_USER_JOURNEY_AND_FLOWS.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/02_USER_JOURNEY_AND_FLOWS.md)** | Sequence Flows: การแก้ไขและกดยืนยันบันทึก, AI Proposal Diff Review, Multiplayer Realtime Cursors |
-| **[03_SYSTEM_ARCHITECTURE.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/03_SYSTEM_ARCHITECTURE.md)** | Technical Architecture: WebSocket Presence Gateway, Yjs/CRDT Sync, Audit & Diff Engine |
-| **[04_DATA_SCHEMA.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/04_DATA_SCHEMA.md)** | Database Schema: ตาราง `resource_versions`, `resource_audit_logs`, `pending_ai_proposals` |
-| **[05_API_SPECIFICATION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/05_API_SPECIFICATION.md)** | APIs: WebSocket Collaboration, Save Resource Confirm, Diff Review Endpoints, Version History |
-| **[06_IMPLEMENTATION_ROADMAP.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/06_IMPLEMENTATION_ROADMAP.md)** | แผนงานพัฒนา 4 ระยะ (เพิ่ม Phase สำหรับ Multiplayer Editor & Audit Engine) |
+| **[01_PRD.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/01_PRD.md)** | Product Requirements ฉบับปรับปรุง: Lock Heartbeat, Incremental Delta Sync, Smart Graph Filters |
+| **[02_USER_JOURNEY_AND_FLOWS.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/02_USER_JOURNEY_AND_FLOWS.md)** | Sequence Flows: การส่ง Heartbeat ต่ออายุ Lock, Incremental Sync Pipeline, Graph Filter Interaction |
+| **[03_SYSTEM_ARCHITECTURE.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/03_SYSTEM_ARCHITECTURE.md)** | Technical Architecture: Redis Lock Heartbeat Manager, Delta Knowledge Syncer, Graph Filter Engine |
+| **[04_DATA_SCHEMA.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/04_DATA_SCHEMA.md)** | Database Schema: ตาราง `project_knowledge_sync_states` รองรับ Delta Sync, ฟิลด์ Tag ใน Glossary |
+| **[05_API_SPECIFICATION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/05_API_SPECIFICATION.md)** | APIs: Incremental Sync API, Heartbeat Ping WebSocket, Filtered Knowledge Graph API |
+| **[06_IMPLEMENTATION_ROADMAP.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/06_IMPLEMENTATION_ROADMAP.md)** | แผนการพัฒนา Phase 1 ถึง Phase 4 ตามลำดับความสำคัญทางเทคนิค |

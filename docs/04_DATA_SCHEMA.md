@@ -1,6 +1,6 @@
 # PostgreSQL Database Schema & Data Models 🗄️
 
-เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **In-Place Editing**, **Resource Versioning**, **Full Audit Trail**, และ **Pending AI Proposals**
+เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **Incremental Delta Knowledge Sync**, **Smart Graph Filters (Degree, Verification, Tags)**, **Block-Level Locking**, และ **Full Version History**
 
 ---
 
@@ -20,10 +20,11 @@ erDiagram
     PROJECTS ||--o{ FOLDERS : "shared folders"
     PROJECTS ||--o{ RESOURCES : "shared multi-format resources"
     PROJECTS ||--o{ PROJECT_RULES : "governed by rules"
-    PROJECTS ||--o{ PROJECT_GLOSSARIES : "shared living glossary"
-    PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes"
+    PROJECTS ||--o{ PROJECT_GLOSSARIES : "shared living glossary (tagged)"
+    PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes (filterable)"
     PROJECTS ||--o{ KNOWLEDGE_GRAPH_EDGES : "shared graph edges"
     PROJECTS ||--o{ KNOWLEDGE_SYNTHESES : "shared summaries"
+    PROJECTS ||--|| PROJECT_KNOWLEDGE_SYNC_STATES : "tracks delta sync & stale status"
     PROJECTS ||--o{ CHAT_SESSIONS : "contains private sessions"
     
     FOLDERS ||--o{ FOLDERS : "sub-folders (parent_id)"
@@ -45,7 +46,90 @@ erDiagram
 
 ## 2. นิยามโครงสร้างตาราง (DDL & Table Specifications)
 
-### 2.1 ตารางผู้ใช้ โปรเจกต์ และสมาชิก (Users & Projects)
+### 2.1 ตารางติดตามสถานะการซิงค์แบบ Incremental Delta Sync
+
+#### `project_knowledge_sync_states`
+```sql
+CREATE TABLE project_knowledge_sync_states (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID UNIQUE NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    is_stale BOOLEAN DEFAULT FALSE,
+    last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    modified_resource_ids UUID[] DEFAULT '{}', -- รายการไฟล์ที่ถูกแก้หลังการซิงค์รอบก่อน
+    last_synced_versions JSONB DEFAULT '{}'::jsonb, -- เก็บ mapping { "res_id": version_number } เพื่อคำนวณ Delta Diff
+    sync_progress_percent INT DEFAULT 100,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sync_state_project ON project_knowledge_sync_states(project_id);
+```
+
+---
+
+### 2.2 ตาราง Living Glossary และ Knowledge Graph แบบรองรับ Smart Filters
+
+#### `project_glossaries`
+```sql
+CREATE TABLE project_glossaries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    term VARCHAR(150) NOT NULL,
+    tag VARCHAR(50) NOT NULL DEFAULT 'General',
+    aliases TEXT[] DEFAULT '{}',
+    definition TEXT NOT NULL,
+    source_resource_ids UUID[] DEFAULT '{}',
+    is_ai_generated BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,       -- สำหรับฟิลเตอร์ Verification Status
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, term, tag)
+);
+
+CREATE INDEX idx_glossary_term_tag ON project_glossaries(project_id, term, tag);
+```
+
+#### `knowledge_graph_nodes`
+```sql
+CREATE TABLE knowledge_graph_nodes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    node_key VARCHAR(150) NOT NULL,
+    label VARCHAR(200) NOT NULL,
+    node_type VARCHAR(50) NOT NULL 
+        CHECK (node_type IN ('CONCEPT', 'TECH_ENTITY', 'ORGANIZATION', 'RULE', 'SOURCE_RESOURCE')),
+    tag VARCHAR(50) DEFAULT 'General',       -- สำหรับฟิลเตอร์ Domain Tag
+    summary TEXT,
+    source_resource_ids UUID[] DEFAULT '{}', -- สำหรับฟิลเตอร์ Folder / Resource
+    is_verified BOOLEAN DEFAULT FALSE,       -- สำหรับฟิลเตอร์ Verification Status
+    metadata_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, node_key)
+);
+
+CREATE INDEX idx_graph_nodes_filter ON knowledge_graph_nodes(project_id, node_type, tag);
+```
+
+#### `knowledge_graph_edges`
+```sql
+CREATE TABLE knowledge_graph_edges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    source_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
+    target_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
+    relation_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    weight FLOAT DEFAULT 1.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, source_node_id, target_node_id, relation_type)
+);
+
+CREATE INDEX idx_graph_edges_project ON knowledge_graph_edges(project_id);
+```
+
+---
+
+### 2.3 ตารางโครงสร้างหลัก (Resources, Versions & Audit Logs)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -80,14 +164,7 @@ CREATE TABLE project_members (
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (project_id, user_id)
 );
-```
 
----
-
-### 2.2 คลังทรัพยากรและการจัดเก็บเวอร์ชัน (Resources & Version History)
-
-#### `folders`
-```sql
 CREATE TABLE folders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -97,10 +174,7 @@ CREATE TABLE folders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### `resources` (ทรัพยากรหลักที่แชร์ในโปรเจกต์)
-```sql
 CREATE TABLE resources (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -122,28 +196,20 @@ CREATE TABLE resources (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### `resource_versions` (ประวัติการแก้ไขและ Snapshot ทุกเวอร์ชัน)
-```sql
 CREATE TABLE resource_versions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
     version_number INT NOT NULL,
     semantic_html TEXT NOT NULL,
     raw_text TEXT NOT NULL,
-    commit_message TEXT NOT NULL,             -- ข้อความอธิบายเหตุผลการบันทึก
-    diff_patch TEXT,                         -- Unified Diff Patch เทียบกับเวอร์ชันก่อน
+    commit_message TEXT NOT NULL,
+    diff_patch TEXT,
     created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (resource_id, version_number)
 );
 
-CREATE INDEX idx_versions_resource ON resource_versions(resource_id, version_number DESC);
-```
-
-#### `resource_audit_logs` (บันทึกการตรวจสอบความเคลื่อนไหวทั้งหมด)
-```sql
 CREATE TABLE resource_audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -153,40 +219,25 @@ CREATE TABLE resource_audit_logs (
         CHECK (action_type IN ('CREATED', 'MANUAL_EDIT', 'AI_EDIT_CONFIRMED', 'ROLLBACK', 'DELETED', 'MOVED')),
     commit_message TEXT,
     is_ai_assisted BOOLEAN DEFAULT FALSE,
-    diff_summary JSONB DEFAULT '{}'::jsonb,  -- สถิติ เช่น จำนวนบรรทัดที่เพิ่ม/ลบ
+    diff_summary JSONB DEFAULT '{}'::jsonb,
     metadata_json JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_audit_resource_time ON resource_audit_logs(resource_id, created_at DESC);
-CREATE INDEX idx_audit_project_time ON resource_audit_logs(project_id, created_at DESC);
-```
-
-#### `pending_ai_proposals` (ข้อเสนอแนะการแก้ไขจาก AI Agent ที่รอผู้ใช้กดยืนยัน)
-```sql
 CREATE TABLE pending_ai_proposals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- ผู้ใช้ที่เป็นเจ้าของ AI Agent
-    target_anchor_id VARCHAR(100) NOT NULL,  -- ย่อหน้าหรือพิกัดที่ AI ต้องการแก้ไข
-    original_html TEXT NOT NULL,             -- ข้อความเดิม
-    proposed_html TEXT NOT NULL,             -- ข้อความที่ AI ร่างขึ้นใหม่
-    diff_json JSONB NOT NULL,                -- โครงสร้างคำต่อคำสำหรับเรนเดอร์ Diff Bar
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_anchor_id VARCHAR(100) NOT NULL,
+    original_html TEXT NOT NULL,
+    proposed_html TEXT NOT NULL,
+    diff_json JSONB NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'accepted', 'rejected')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_proposals_pending ON pending_ai_proposals(resource_id, user_id, status);
-```
-
----
-
-### 2.3 เวกเตอร์และไฮไลต์ส่วนตัว (Chunks & Annotations)
-
-#### `resource_chunks`
-```sql
 CREATE TABLE resource_chunks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     resource_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
@@ -202,10 +253,7 @@ CREATE TABLE resource_chunks (
 CREATE INDEX idx_chunks_embedding ON resource_chunks 
 USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
 CREATE INDEX idx_chunks_tsv ON resource_chunks USING gin(tsv);
-```
 
-#### `user_annotations`
-```sql
 CREATE TABLE user_annotations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -217,53 +265,6 @@ CREATE TABLE user_annotations (
     personal_note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-### 2.4 เสาหลัก Knowledge และ Rules (Shared)
-
-```sql
-CREATE TABLE project_glossaries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    term VARCHAR(150) NOT NULL,
-    aliases TEXT[] DEFAULT '{}',
-    definition TEXT NOT NULL,
-    source_resource_ids UUID[] DEFAULT '{}',
-    is_ai_generated BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, term)
-);
-
-CREATE TABLE knowledge_graph_nodes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    node_key VARCHAR(150) NOT NULL,
-    label VARCHAR(200) NOT NULL,
-    node_type VARCHAR(50) NOT NULL 
-        CHECK (node_type IN ('CONCEPT', 'ENTITY', 'TOPIC', 'SOURCE_RESOURCE')),
-    summary TEXT,
-    source_resource_ids UUID[] DEFAULT '{}',
-    metadata_json JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, node_key)
-);
-
-CREATE TABLE knowledge_graph_edges (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    source_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
-    target_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
-    relation_type VARCHAR(50) NOT NULL,
-    description TEXT,
-    weight FLOAT DEFAULT 1.0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, source_node_id, target_node_id, relation_type)
 );
 
 CREATE TABLE knowledge_syntheses (
@@ -289,13 +290,7 @@ CREATE TABLE project_rules (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
----
-
-### 2.5 ระบบสนทนาส่วนตัว (Private 1-User-1-Session)
-
-```sql
 CREATE TABLE chat_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
