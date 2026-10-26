@@ -1,86 +1,120 @@
 # User Journey & Interaction Workflows 🗺️
 
-เอกสารฉบับนี้อธิบายเส้นทางประสบการณ์ผู้ใช้ (User Journey) และแผนภาพลำดับขั้นตอนการทำงาน (Sequence & Flowcharts) ฉบับปรับปรุง เพื่อรองรับ **Block-Level Locking พร้อม Heartbeat Timeout**, **Incremental Delta Knowledge Sync**, และ **Smart Knowledge Graph Filters**
+เอกสารฉบับนี้อธิบายเส้นทางประสบการณ์ผู้ใช้ (User Journey) และแผนภาพลำดับขั้นตอนการทำงาน (Sequence & Flowcharts) ฉบับปรับปรุง เพื่อรองรับ **Block-Level Exclusive Locking ระบุตัวตนผู้ล็อก (Private Typing -> Broadcast เมื่อเสร็จ)**, **Whole-Document Save พร้อม Diff Modal**, และ **Save-Triggered Delta Sync & Conflict Detector**
 
 ---
 
-## 1. ลำดับการล็อกระดับบล็อก และกลไก Heartbeat Timeout (Lock Heartbeat Flow)
+## 1. ลำดับการล็อกระดับบล็อก และการแสดงผลเมื่อพิมพ์เสร็จ (Block Lock & Reveal Flow)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor UserA as ผู้แก้ไข (User A)
+    actor UserA as ผู้แก้ไข / AI Agent (User A)
     actor UserB as เพื่อนร่วมทีม (User B)
     participant UI_A as Next.js (User A)
-    participant WS as WebSocket Collaboration Server
+    participant UI_B as Next.js (User B)
+    participant WS as WebSocket Server
     participant Redis as Redis Lock Store
 
-    UserA->>UI_A: คลิกแก้ไขบล็อก <p id="p-002">
-    UI_A->>WS: acquire_block_lock(res_id, "p-002")
-    WS->>Redis: SET lock:res_id:p-002 user_A EX 60
-    WS-->>UserB: บรอดแคสต์: บล็อก "p-002" ถูกล็อกโดย User A
+    UserA->>UI_A: เริ่มแก้ไขบล็อก <p id="p-002"> (หรือสั่ง AI Agent แก้)
+    UI_A->>WS: acquire_block_lock(res_id, "p-002", actor="User A")
+    WS->>Redis: SET lock:res_id:p-002 "User A" EX 60
+    WS-->>UI_B: บรอดแคสต์: บล็อก "p-002" ถูกล็อกโดย: User A (แสดงแถบสีส้มระบุชื่อ)
+    
+    Note over UI_B,UserB: User B เห็นป้ายว่า User A กำลังแก้<br/>แต่ "ไม่เห็น" ตัวหนังสือวิ่งสดๆ (Private Typing)
 
-    loop ทุกๆ 15 วินาที (Heartbeat Loop)
-        UI_A->>WS: ping_lock_heartbeat(res_id, "p-002")
-        WS->>Redis: EXPIRE lock:res_id:p-002 60 (ต่ออายุ Lock ไปอีก 60 วิ)
-    end
-
-    alt กรณี User A ปิดแท็บ หรือเน็ตหลุดกะทันหัน
-        Note over UI_A,WS: สัญญาณ Heartbeat ขาดหายไป
-        Note over Redis: เวลาผ่านไป 60 วินาที... Key หมดอายุ (Expired)
-        WS-->>UserB: บรอดแคสต์: บล็อก "p-002" หลุดจากการล็อกแล้ว (Auto-Unlocked)
-    else กรณีปกติ (User A บันทึกและ Unfocus)
-        UserA->>UI_A: กดบันทึกบล็อก และคลิกเมาส์ออก (Unfocus)
-        UI_A->>WS: release_block_lock(res_id, "p-002")
-        WS->>Redis: DEL lock:res_id:p-002
-        WS-->>UserB: อัปเดตข้อความใหม่ + ปลดล็อกบล็อก
-    end
+    UserA->>UI_A: พิมพ์ข้อความจนเสร็จเรียบร้อย (หรือ AI ร่างข้อความเสร็จ)
+    UserA->>UI_A: คลิกออกจากบล็อก (Unfocus / Blur)
+    
+    UI_A->>WS: release_and_reveal_block(res_id, "p-002", new_html="...")
+    WS->>Redis: DEL lock:res_id:p-002
+    WS-->>UI_B: ส่งข้อความใหม่ของบล็อก "p-002" + ปลดล็อกสถานะ
+    
+    Note over UI_B,UserB: บล็อก "p-002" บนหน้าจอของ User B<br/>เปลี่ยนเป็นข้อความใหม่ทันทีอย่างราบรื่น
 ```
 
 ---
 
-## 2. ลำดับการซิงค์ความรู้แบบประหยัด Token: Incremental Delta Sync
+## 2. ลำดับการบันทึกเอกสารทั้งฉบับ และการซิงค์ความรู้ (Save Resource & Delta Sync Flow)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as สมาชิกผู้บันทึก
+    participant UI as Next.js Editor
+    participant API as FastAPI Backend
+    participant Worker as Background Worker
+    participant DB as PostgreSQL
+
+    Note over User,UI: แก้ไขบล็อกต่างๆ จนพอใจแล้ว (เนื้อหาใหม่แสดงบนหน้าจอครบถ้วน)
+    User->>UI: คลิกปุ่ม "💾 บันทึกเอกสาร (Save Resource)"
+    
+    UI->>API: POST /api/v1/projects/{id}/resources/{res_id}/diff-preview
+    API-->>UI: คืนค่า Full Document Diff (ข้อความเดิม vs ข้อความใหม่ทั้งเอกสาร)
+    
+    UI->>User: เปิด Modal แสดงภาพรวม Diff (แดง=ตัดออก, เขียว=เพิ่มเข้า)
+    Note over UI,User: ผู้ใช้ตรวจทานความถูกต้องทั้งเอกสาร และกรอก Commit Message
+    User->>UI: คลิกปุ่ม "✅ ยืนยันการบันทึก"
+    
+    UI->>API: PUT /api/v1/projects/{id}/resources/{res_id}/save-confirmed
+    API->>DB: บันทึกเวอร์ชันใหม่ลง resources, resource_versions, resource_audit_logs
+    API->>Worker: Enqueue งาน Delta Sync + Conflict Detection ทันที!
+    API-->>UI: ยืนยันบันทึกสำเร็จ (200 OK)
+    
+    activate Worker
+    Worker->>Worker: สกัด Living Glossary และ Knowledge Graph เฉพาะส่วนต่าง (Delta)
+    Worker->>Worker: รัน Contradiction Detector ตรวจหาข้อเท็จจริงขัดแย้งกับไฟล์อื่น
+    opt พบข้อเท็จจริงขัดแย้ง
+        Worker->>DB: บันทึก Alert ลงตาราง knowledge_conflicts
+        Worker-->>UI: ส่งแจ้งเตือน WebSocket: "⚠️ พบข้อเท็จจริงขัดแย้งกับไฟล์ XYZ"
+    end
+    deactivate Worker
+    
+    Worker-->>UI: แจ้งเตือน: Knowledge Hub อัปเดตข้อมูลล่าสุดเรียบร้อย
+```
+
+---
+
+## 3. ลำดับการทำงานของ Contradiction & Conflict Detector
 
 ```mermaid
 flowchart TD
-    A[ผู้ใช้คลิกปุ่ม '⚡ อัปเดต Knowledge'] --> B[ระบบดึงรายชื่อไฟล์ใน modified_resources]
-    B --> C[เปรียบเทียบ Diff กับเวอร์ชันก่อนหน้า: สกัด Added Text & Deleted Text]
+    A[Background Job เริ่มประมวลผลหลังบันทึกไฟล์ใหม่] --> B[สกัดข้อเท็จจริงสำคัญ Claims จากเนื้อหาใหม่]
+    B --> C[ค้นหา Chunks ที่เกี่ยวข้องในเอกสารอื่นๆ ด้วย Vector Similarity]
+    C --> D[ส่งข้อเท็จจริงคู่ขนานเข้า LLM Cross-Verification]
     
-    C --> D[1. สกัดเฉพาะ Added Text]
-    D --> E[ส่งเฉพาะข้อความที่เพิ่มเข้าสู่ LLM เพื่อดึง Glossary & Graph Nodes ใหม่]
-    E --> F[Upsert เข้าตาราง project_glossaries และ knowledge_graph_nodes]
-
-    C --> G[2. ตรวจสอบ Deleted Text]
-    G --> H[ค้นหาคำศัพท์/โหนดที่ข้อความนี้เคยอ้างอิง]
-    H --> I{ยังมีเอกสารอื่นอ้างอิงอยู่หรือไม่?}
-    I -- มีเอกสารอื่นอ้างอิง -- --> J[คงไว้ตามปกติ]
-    I -- ไม่มีใครอ้างอิงแล้ว -- --> K[ปลดการเชื่อมโยง หรือลบออก (Pruning)]
-
-    F --> L[คำนวณ Embeddings เฉพาะ Chunks ที่เปลี่ยนแปลง]
-    K --> L
-    L --> M[ล้าง modified_resources และตั้ง is_stale = false]
-    M --> N[แจ้งเตือน Frontend: การซิงค์เสร็จสิ้น (ใช้ Token น้อยลง 90%+)]
+    D --> E{ข้อมูลตรงกันหรือขัดแย้งกัน?}
+    E -- ข้อมูลสอดคล้องกัน -- --> F[ผ่าน: อัปเดต Knowledge Base ตามปกติ]
+    E -- ข้อมูลขัดแย้งกัน -- --> G[สร้าง Record ในตาราง knowledge_conflicts]
+    
+    G --> H[แสดงป้ายเตือนใน Knowledge Hub: Conflict Alert]
+    H --> I[แสดง: ชื่อ 2 ไฟล์ที่ขัดแย้ง + ข้อความที่ค้านกัน]
+    I --> J[ทีมงานตรวจสอบและคลิก 'ทำเครื่องหมายว่ารับทราบ/แก้ไขแล้ว']
 ```
 
 ---
 
-## 3. ลำดับการใช้งานตัวกรอง Smart Knowledge Graph (Graph Filter Flow)
+## 4. ลำดับการทดสอบกฎ AI ใน Rules Simulator (Rules Sandbox Flow)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as สมาชิกในทีม
-    participant UI as Next.js Graph Viewer
+    actor Admin as ผู้ดูแลโปรเจกต์
+    participant UI as Rules Sandbox UI
     participant API as FastAPI Backend
-    participant DB as PostgreSQL
+    participant Compiler as Prompt & Rules Compiler
+    participant LLM as AI Engine
 
-    User->>UI: เปิดหน้า Knowledge Graph Hub (พบโหนด 150 โหนด หนาแน่นเกินไป)
-    User->>UI: ปรับตัวกรอง:
-    Note over UI,User: - เลือกโฟลเดอร์: "Clinical Trials"<br/>- เลือก Node Type: "CONCEPT"<br/>- ปรับ Hub Slider: เส้นเชื่อม >= 3 เส้น
+    Admin->>UI: เปิดแท็บ "🧪 ทดสอบกฎ (Rules Sandbox)"
+    Admin->>UI: พิมพ์คำถามจำลอง: "โครงการนี้มีงบประมาณและส่วนลดเท่าไหร่?"
+    UI->>API: POST /api/v1/projects/{id}/rules/simulate
     
-    UI->>API: GET /api/v1/projects/{id}/knowledge-graph?folder_id=...&node_type=CONCEPT&min_degree=3
-    API->>DB: Query โหนดและเส้นเชื่อมตามเงื่อนไข
-    API-->>UI: คืนค่าเฉพาะ 18 โหนดหลักที่เป็นแกนกลาง
+    API->>Compiler: ดึง Active Rules ทั้งหมด (Do's, Don'ts, Persona)
+    Compiler->>LLM: ส่ง Prompt ทดสอบพร้อมกฎที่คอมไพล์แล้ว
+    LLM-->>API: คำตอบจำลอง
     
-    UI->>User: เรนเดอร์กราฟใหม่ที่สะอาดตา คมชัด และตรงประเด็นทันที
+    API->>API: ตรวจสอบว่าคำตอบฝ่าฝืนกฎข้อใดหรือไม่ (Rule Compliance Check)
+    API-->>UI: ส่งผลลัพธ์คำตอบ + กฎที่ถูกเรียกใช้ + สถานะ Pass/Fail
+    
+    UI->>Admin: แสดงคำตอบจำลอง พร้อมไฮไลต์ว่าปฏิบัติตามกฎ Don'ts เรียบร้อย
 ```

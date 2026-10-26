@@ -16,13 +16,15 @@
 │ ➔ Celery Worker + Smart Graph Filters (Degree Slider, Type, Tag)       │
 │ ➔ Multi-format HTML Viewers (Document, Slide, Grid, Vision Card)       │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Phase 3: Block Lock with Heartbeat & Incremental Delta Sync (สัปดาห์ 5-6)│
+│ Phase 3: Save Diff Modal, Delta Sync & Contradiction Alert (สัปดาห์ 5-6)│
+│ ➔ Whole-Document Save with Full Diff Confirmation Modal                │
+│ ➔ Save-Triggered Incremental Delta Sync (รันอัตโนมัติทันทีหลัง Save)   │
+│ ➔ Contradiction & Conflict Detector (ตรวจจับข้อเท็จจริงขัดแย้งข้ามไฟล์)│
 │ ➔ Redis Block Lock (TTL 60s, Heartbeat Ping 15s, Auto-Expiry Safety)   │
-│ ➔ Incremental Delta Knowledge Syncer (สกัดเฉพาะ Diff ประหยัด Token)    │
-│ ➔ Stale Knowledge Tracker + Manual Update Button                       │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Phase 4: Context Scope, AI Review & Production Polish (สัปดาห์ 7-8)    │
-│ ➔ Chat Scope Picker (Default ทั้งหมด / เลือกระบุโฟลเดอร์หรือไฟล์)       │
+│ Phase 4: Rules Simulator, Faithful Chat & Production Polish (สัปดาห์ 7-8)│
+│ ➔ Project Rules Simulator / Sandbox (ทดสอบกฎก่อนใช้งานจริง)            │
+│ ➔ Citation Faithfulness Check (ป้ายตรวจทานอ้างอิงตรงความจริง 100%)     │
 │ ➔ Human-in-the-Loop AI Diff Review Bar + Full Audit Trail & Rollback   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -52,25 +54,24 @@
 
 ---
 
-### 📌 Phase 3: การล็อกระดับบล็อกพร้อม Heartbeat และการซิงค์ส่วนต่าง (Delta Sync)
-1. พัฒนาระบบ **Block-Level Exclusive Locking พร้อม Heartbeat Safety**:
-   - เชื่อมต่อ WebSocket ร่วมกับ Redis Key-Value (TTL 60s)
-   - ส่ง Ping Heartbeat ทุก 15 วินาทีเพื่อต่ออายุตราบใดที่ยังแก้ไขอยู่
-   - ปลดล็อกอัตโนมัติหากขาดการติดต่อไปเกิน 60 วินาที ป้องกันบล็อกค้าง
-2. พัฒนาระบบ **Incremental Delta Knowledge Sync**:
-   - วิเคราะห์เฉพาะไฟล์ใน `modified_resources` เทียบ Diff ส่วนต่าง
-   - สกัดเฉพาะข้อความที่เพิ่มเข้า และตัดทอนคำศัพท์/โหนดที่ไม่มีการอ้างอิงแล้ว
-   - ลดการใช้ Token ลงกว่า 90% และประมวลผลเร็วขึ้นอย่างมหาศาล
-   - หน้าจอแสดง Stale Knowledge Indicator พร้อมปุ่มกดสั่งการด้วยตนเอง 100%
+### 📌 Phase 3: การบันทึกพร้อมดู Diff, ซิงค์ความรู้ และตรวจจับ Conflict
+1. พัฒนาระบบ **Whole-Document Save with Full Diff Modal**:
+   - หน้าจอเปรียบเทียบ Diff ทั้งเอกสารก่อนกดยืนยันบันทึกจริง
+2. พัฒนาระบบ **Save-Triggered Incremental Delta Sync**:
+   - รัน Background Job ซิงค์ความรู้ทันทีหลัง Save โดยวิเคราะห์เฉพาะ Diff ส่วนต่าง ประหยัด Token
+3. พัฒนาระบบ **Contradiction & Conflict Detector**:
+   - เปรียบเทียบข้อเท็จจริงใหม่กับไฟล์อื่นในโปรเจกต์ และสร้างการ์ดแจ้งเตือน Conflict Alert ใน Knowledge Hub
+4. พัฒนาระบบ **Block-Level Locking พร้อม Heartbeat Safety (TTL 60s, Ping 15s)**
 
 ---
 
-### 📌 Phase 4: ควบคุมขอบเขตแชท และการตรวจทานผลงาน AI (Scope & Audit)
-1. พัฒนา **Context Scope Picker** ในหน้า Chat:
-   - ค่าเริ่มต้นค้นหาทั้งโปรเจกต์ หรือคลิกเลือกเฉพาะบางโฟลเดอร์/เอกสาร
-2. พัฒนาระบบ **Human-in-the-Loop AI Proposal Review**:
+### 📌 Phase 4: ห้องทดลองกฎ, แชทอ้างอิงเที่ยงตรง และการขัดเกลาระบบ
+1. พัฒนา **Project Rules Simulator / Sandbox**:
+   - หน้าต่างทดสอบส่งคำถามจำลองเพื่อตรวจสอบผลลัพธ์ของกฎก่อนเปิดใช้งานจริง
+2. พัฒนาระบบ **Citation Faithfulness Check**:
+   - ป้ายกำกับตรวจทาน `[Ref: doc #p-14 ✓]` พร้อม Popover ประโยคต้นฉบับ
+3. พัฒนาระบบ **Human-in-the-Loop AI Proposal Review**:
    - Inline Diff Bar แสดงข้อความเดิมและข้อความใหม่
    - ผู้ใช้เจ้าของ AI เป็นผู้กด Confirm Changes
-3. พัฒนาระบบ **Full Audit Trail & Version History**:
+4. พัฒนาระบบ **Full Audit Trail & Version History**:
    - ตาราง `resource_versions` และ `resource_audit_logs` พร้อมปุ่ม Rollback
-   - ยกเว้นการสนทนาใน Private Chat ออกจาก Audit Log

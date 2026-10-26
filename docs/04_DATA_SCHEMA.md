@@ -1,6 +1,6 @@
 # PostgreSQL Database Schema & Data Models 🗄️
 
-เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **Incremental Delta Knowledge Sync**, **Smart Graph Filters (Degree, Verification, Tags)**, **Block-Level Locking**, และ **Full Version History**
+เอกสารฉบับนี้กำหนดโครงสร้างฐานข้อมูลเชิงสัมพันธ์และเวกเตอร์ (Relational & Vector Data Schema) สำหรับ **PostgreSQL 16** พร้อมส่วนขยาย `pgvector` ฉบับปรับปรุง เพื่อรองรับ **ตารางแจ้งเตือนข้อเท็จจริงขัดแย้ง (Knowledge Conflicts)**, **Whole-Document Save & Version History**, **Incremental Delta Sync**, และ **Tag-Based Living Glossary**
 
 ---
 
@@ -15,6 +15,7 @@ erDiagram
     USERS ||--o{ RESOURCE_VERSIONS : "commits"
     USERS ||--o{ RESOURCE_AUDIT_LOGS : "acts"
     USERS ||--o{ PENDING_AI_PROPOSALS : "reviews"
+    USERS ||--o{ KNOWLEDGE_CONFLICTS : "resolves"
     
     PROJECTS ||--o{ PROJECT_MEMBERS : "has members"
     PROJECTS ||--o{ FOLDERS : "shared folders"
@@ -24,6 +25,7 @@ erDiagram
     PROJECTS ||--o{ KNOWLEDGE_GRAPH_NODES : "shared graph nodes (filterable)"
     PROJECTS ||--o{ KNOWLEDGE_GRAPH_EDGES : "shared graph edges"
     PROJECTS ||--o{ KNOWLEDGE_SYNTHESES : "shared summaries"
+    PROJECTS ||--o{ KNOWLEDGE_CONFLICTS : "tracks source contradictions"
     PROJECTS ||--|| PROJECT_KNOWLEDGE_SYNC_STATES : "tracks delta sync & stale status"
     PROJECTS ||--o{ CHAT_SESSIONS : "contains private sessions"
     
@@ -35,6 +37,8 @@ erDiagram
     RESOURCES ||--o{ RESOURCE_VERSIONS : "versioned into"
     RESOURCES ||--o{ RESOURCE_AUDIT_LOGS : "audited by"
     RESOURCES ||--o{ PENDING_AI_PROPOSALS : "has proposals"
+    RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in A"
+    RESOURCES ||--o{ KNOWLEDGE_CONFLICTS : "conflicts in B"
     
     KNOWLEDGE_GRAPH_NODES ||--o{ KNOWLEDGE_GRAPH_EDGES : "source"
     KNOWLEDGE_GRAPH_NODES ||--o{ KNOWLEDGE_GRAPH_EDGES : "target"
@@ -46,7 +50,33 @@ erDiagram
 
 ## 2. นิยามโครงสร้างตาราง (DDL & Table Specifications)
 
-### 2.1 ตารางติดตามสถานะการซิงค์แบบ Incremental Delta Sync
+### 2.1 ตารางตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts Table)
+
+#### `knowledge_conflicts` (บันทึกข้อเท็จจริงที่ขัดแย้งกันข้ามเอกสาร)
+```sql
+CREATE TABLE knowledge_conflicts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    source_resource_a_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    source_resource_b_id UUID NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+    anchor_a_id VARCHAR(100) NOT NULL,       -- พิกัดย่อหน้า/สไลด์ของเอกสาร A
+    anchor_b_id VARCHAR(100) NOT NULL,       -- พิกัดย่อหน้า/สไลด์ของเอกสาร B
+    statement_a TEXT NOT NULL,               -- ข้อความหรือตัวเลขในเอกสาร A
+    statement_b TEXT NOT NULL,               -- ข้อความหรือตัวเลขในเอกสาร B
+    conflict_description TEXT NOT NULL,      -- คำอธิบายความขัดแย้งที่ AI วิเคราะห์ได้
+    status VARCHAR(50) NOT NULL DEFAULT 'unresolved'
+        CHECK (status IN ('unresolved', 'acknowledged', 'resolved')),
+    resolved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_conflicts_project ON knowledge_conflicts(project_id, status);
+```
+
+---
+
+### 2.2 ตารางติดตามการซิงค์แบบ Delta Sync
 
 #### `project_knowledge_sync_states`
 ```sql
@@ -55,76 +85,13 @@ CREATE TABLE project_knowledge_sync_states (
     project_id UUID UNIQUE NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     is_stale BOOLEAN DEFAULT FALSE,
     last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    modified_resource_ids UUID[] DEFAULT '{}', -- รายการไฟล์ที่ถูกแก้หลังการซิงค์รอบก่อน
-    last_synced_versions JSONB DEFAULT '{}'::jsonb, -- เก็บ mapping { "res_id": version_number } เพื่อคำนวณ Delta Diff
+    modified_resource_ids UUID[] DEFAULT '{}',
+    last_synced_versions JSONB DEFAULT '{}'::jsonb,
     sync_progress_percent INT DEFAULT 100,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_sync_state_project ON project_knowledge_sync_states(project_id);
-```
-
----
-
-### 2.2 ตาราง Living Glossary และ Knowledge Graph แบบรองรับ Smart Filters
-
-#### `project_glossaries`
-```sql
-CREATE TABLE project_glossaries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    term VARCHAR(150) NOT NULL,
-    tag VARCHAR(50) NOT NULL DEFAULT 'General',
-    aliases TEXT[] DEFAULT '{}',
-    definition TEXT NOT NULL,
-    source_resource_ids UUID[] DEFAULT '{}',
-    is_ai_generated BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,       -- สำหรับฟิลเตอร์ Verification Status
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, term, tag)
-);
-
-CREATE INDEX idx_glossary_term_tag ON project_glossaries(project_id, term, tag);
-```
-
-#### `knowledge_graph_nodes`
-```sql
-CREATE TABLE knowledge_graph_nodes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    node_key VARCHAR(150) NOT NULL,
-    label VARCHAR(200) NOT NULL,
-    node_type VARCHAR(50) NOT NULL 
-        CHECK (node_type IN ('CONCEPT', 'TECH_ENTITY', 'ORGANIZATION', 'RULE', 'SOURCE_RESOURCE')),
-    tag VARCHAR(50) DEFAULT 'General',       -- สำหรับฟิลเตอร์ Domain Tag
-    summary TEXT,
-    source_resource_ids UUID[] DEFAULT '{}', -- สำหรับฟิลเตอร์ Folder / Resource
-    is_verified BOOLEAN DEFAULT FALSE,       -- สำหรับฟิลเตอร์ Verification Status
-    metadata_json JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, node_key)
-);
-
-CREATE INDEX idx_graph_nodes_filter ON knowledge_graph_nodes(project_id, node_type, tag);
-```
-
-#### `knowledge_graph_edges`
-```sql
-CREATE TABLE knowledge_graph_edges (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    source_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
-    target_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
-    relation_type VARCHAR(50) NOT NULL,
-    description TEXT,
-    weight FLOAT DEFAULT 1.0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (project_id, source_node_id, target_node_id, relation_type)
-);
-
-CREATE INDEX idx_graph_edges_project ON knowledge_graph_edges(project_id);
 ```
 
 ---
@@ -265,6 +232,56 @@ CREATE TABLE user_annotations (
     personal_note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+### 2.4 ตาราง Knowledge Hub, Rules และ Chat
+
+```sql
+CREATE TABLE project_glossaries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    term VARCHAR(150) NOT NULL,
+    tag VARCHAR(50) NOT NULL DEFAULT 'General',
+    aliases TEXT[] DEFAULT '{}',
+    definition TEXT NOT NULL,
+    source_resource_ids UUID[] DEFAULT '{}',
+    is_ai_generated BOOLEAN DEFAULT TRUE,
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, term, tag)
+);
+
+CREATE TABLE knowledge_graph_nodes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    node_key VARCHAR(150) NOT NULL,
+    label VARCHAR(200) NOT NULL,
+    node_type VARCHAR(50) NOT NULL 
+        CHECK (node_type IN ('CONCEPT', 'TECH_ENTITY', 'ORGANIZATION', 'RULE', 'SOURCE_RESOURCE')),
+    tag VARCHAR(50) DEFAULT 'General',
+    summary TEXT,
+    source_resource_ids UUID[] DEFAULT '{}',
+    is_verified BOOLEAN DEFAULT FALSE,
+    metadata_json JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, node_key)
+);
+
+CREATE TABLE knowledge_graph_edges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    source_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
+    target_node_id UUID NOT NULL REFERENCES knowledge_graph_nodes(id) ON DELETE CASCADE,
+    relation_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    weight FLOAT DEFAULT 1.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, source_node_id, target_node_id, relation_type)
 );
 
 CREATE TABLE knowledge_syntheses (

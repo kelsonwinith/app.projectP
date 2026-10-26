@@ -1,128 +1,122 @@
 # RESTful & Streaming API Specification 🔌
 
-เอกสารฉบับนี้กำหนดสเปกของ API สำหรับ **FastAPI Backend** เพื่อให้ **Next.js Frontend** เชื่อมต่อการทำงานได้อย่างสมบูรณ์แบบ ครอบคลุม **การสั่งซิงค์ความรู้ส่วนต่าง Incremental Delta Sync**, **ตัวกรอง Smart Knowledge Graph**, **การส่ง Heartbeat ต่ออายุการล็อกบล็อก**, และ **Living Glossary จำแนกด้วย Tags**
+เอกสารฉบับนี้กำหนดสเปกของ API สำหรับ **FastAPI Backend** เพื่อให้ **Next.js Frontend** เชื่อมต่อการทำงานได้อย่างสมบูรณ์แบบ ครอบคลุม **WebSocket Block Lock & Reveal Event**, **การพรีวิว Diff ก่อนบันทึกเอกสารทั้งฉบับ**, **การบันทึกพร้อมทริกเกอร์ซิงค์และตรวจจับ Conflict ทันที**, **API การจัดการข้อขัดแย้ง (Conflicts API)**, และ **ห้องทดลองกฎ AI (Rules Simulator API)**
 
 ---
 
 ## 1. ข้อมูลพื้นฐาน (Base URL & Headers)
 * **Base URL:** `/api/v1`
 * **WebSocket URL:** `ws://api.domain.com/ws`
-* **Authentication:** Bearer Token (JWT) ผ่าน Header `Authorization: Bearer <token>` หรือ Query Param สำหรับ WebSocket
+* **Authentication:** Bearer Token (JWT) ผ่าน Header `Authorization: Bearer <token>`
 
 ---
 
-## 2. กลุ่ม API: ซิงค์ความรู้ส่วนต่างและการติดตาม (Incremental Sync & Stale Tracking)
+## 2. กลุ่ม API: การพรีวิว Diff และการบันทึกเอกสารทั้งฉบับ (Whole-Document Save & Diff)
 
-### 2.1 ตรวจสอบสถานะความรู้ล้าสมัย (Stale Knowledge Indicator API)
-* **`GET /api/v1/projects/{project_id}/knowledge/sync-status`**
+### 2.1 พรีวิว Diff ทั้งเอกสารก่อนกดยืนยัน (Diff Preview API)
+* **`POST /api/v1/projects/{project_id}/resources/{resource_id}/diff-preview`**
+  - ส่งร่างข้อความใหม่ทั้งเอกสารไปเปรียบเทียบกับเวอร์ชันที่บันทึกล่าสุด
+  - **Request Body:**
+    ```json
+    { "draft_html": "<article><p id='p-001'>ข้อความใหม่...</p></article>" }
+    ```
   - **Response (200 OK):**
     ```json
     {
-      "is_stale": true,
-      "last_synced_at": "2026-10-26T21:00:00Z",
-      "modified_resources": [
-        {
-          "id": "uuid-res-1",
-          "name": "architecture_v2.docx",
-          "format_type": "document",
-          "updated_at": "2026-10-26T23:15:00Z"
-        }
+      "diff_unified": "@@ -1,4 +1,4 @@\n-ข้อความเดิม\n+ข้อความใหม่...",
+      "added_lines": 3,
+      "removed_lines": 1,
+      "diff_blocks": [
+        { "anchor_id": "p-001", "change_type": "modified", "original": "เดิม", "proposed": "ใหม่" }
       ]
     }
     ```
 
-### 2.2 สั่งซิงค์ความรู้เฉพาะส่วนต่าง (Incremental Delta Sync API)
-* **`POST /api/v1/projects/{project_id}/knowledge/sync`**
-  - รันกระบวนการ Delta Sync: ส่งเฉพาะไฟล์ใน `modified_resources` และวิเคราะห์ Diff ส่วนต่าง เพื่อประหยัด Token สูงสุด
-  - **Response (202 Accepted):**
+### 2.2 บันทึกเอกสารทั้งฉบับ และทริกเกอร์ซิงค์ความรู้ทันที (Save Confirmed API)
+* **`PUT /api/v1/projects/{project_id}/resources/{resource_id}/save-confirmed`**
+  - บันทึกเวอร์ชันใหม่ และส่งเข้าคิว Background Job ทำการ Delta Sync + Contradiction Check ทันที!
+  - **Request Body:**
     ```json
     {
-      "message": "Incremental delta knowledge sync initiated.",
-      "job_id": "job-celery-123",
-      "sync_mode": "incremental_delta"
+      "semantic_html": "<article><p id='p-001'>ข้อความใหม่...</p></article>",
+      "raw_text": "ข้อความใหม่...",
+      "commit_message": "อัปเดตเงื่อนไขสัญญาฉบับแก้ไขไตรมาส 3"
+    }
+    ```
+  - **Response (200 OK):**
+    ```json
+    {
+      "resource_id": "uuid-res-1",
+      "new_version": 2,
+      "sync_job_id": "job-delta-sync-123",
+      "message": "Resource saved. Incremental delta sync and conflict check enqueued immediately."
     }
     ```
 
 ---
 
-## 3. กลุ่ม WebSocket API: การล็อกระดับบล็อกและ Heartbeat (Block Lock & Heartbeat)
+## 3. กลุ่ม WebSocket API: การล็อกระดับบล็อกและการเผยแพร่ผลลัพธ์ (Block Lock & Reveal)
 
 * **`WS /ws/projects/{project_id}/resources/{resource_id}?token=<jwt>`**
 
 ### 3.1 สัญญาณขอเข้าล็อกบล็อก (Acquire Block Lock)
-* **Client ส่ง:**
+* **Client ส่ง (Event: `acquire_block_lock`):**
   ```json
-  { "action": "acquire_block_lock", "anchor_id": "p-002" }
+  {
+    "action": "acquire_block_lock",
+    "anchor_id": "p-002",
+    "actor_name": "Somchai"
+  }
   ```
-* **Server บรอดแคสต์:** บล็อก "p-002" ถูกล็อกโดย User A (TTL 60s ใน Redis)
+* **Server บรอดแคสต์หาเพื่อนร่วมทีมในห้อง:**
+  ```json
+  {
+    "event": "block_locked",
+    "anchor_id": "p-002",
+    "locked_by": "Somchai",
+    "is_locked": true
+  }
+  ```
 
-### 3.2 สัญญาณส่ง Heartbeat ต่ออายุ Lock ทุก 15 วินาที (Heartbeat Ping)
-* **Client ส่ง (ทุก 15s ตราบใดที่ยัง Focus อยู่):**
+### 3.2 สัญญาณส่ง Heartbeat ต่ออายุ Lock ทุก 15 วินาที
+* **Client ส่ง:**
   ```json
   { "action": "ping_lock_heartbeat", "anchor_id": "p-002" }
   ```
-* **Server จัดการ:** ขยายเวลา `EXPIRE lock:{res_id}:{anchor_id} 60` หากขาด Ping เกิน 60 วินาที จะบรอดแคสต์ `block_auto_unlocked` ทันที
+* **Server จัดการ:** ขยายเวลา `EXPIRE lock:{res_id}:{anchor_id} 60` หากขาด Ping เกิน 60 วินาที จะบรอดแคสต์ `block_auto_unlocked`
 
-### 3.3 สัญญาณบันทึกและปลดล็อกเมื่อ Unfocus (Save & Release Lock)
-* **Client ส่ง:**
+### 3.3 สัญญาณปลดล็อกและแสดงผลข้อความใหม่ทันทีเมื่อพิมพ์เสร็จ (Reveal on Finish)
+* **Client ส่ง (เมื่อผู้ใช้พิมพ์เสร็จ / Unfocus หรือ AI เจนเสร็จ):**
   ```json
   {
-    "action": "save_and_release_block",
+    "action": "release_and_reveal_block",
     "anchor_id": "p-002",
-    "new_html": "<p id='p-002'>ข้อความใหม่ที่แก้ไขแล้ว</p>",
-    "new_raw_text": "ข้อความใหม่ที่แก้ไขแล้ว"
+    "new_html": "<p id='p-002'>ข้อความใหม่ที่ Somchai แก้ไขเสร็จสมบูรณ์แล้ว</p>",
+    "new_raw_text": "ข้อความใหม่ที่ Somchai แก้ไขเสร็จสมบูรณ์แล้ว"
   }
   ```
-* **Server บรอดแคสต์:** ส่งข้อความใหม่และปลดล็อกบล็อกให้ทุกคนทราบ
+* **Server บรอดแคสต์หาทุกคนในห้อง (Event: `block_updated`):**
+  ```json
+  {
+    "event": "block_updated",
+    "anchor_id": "p-002",
+    "updated_html": "<p id='p-002'>ข้อความใหม่ที่ Somchai แก้ไขเสร็จสมบูรณ์แล้ว</p>",
+    "is_locked": false
+  }
+  ```
 
 ---
 
-## 4. กลุ่ม API: ตัวกรอง Smart Knowledge Graph (Graph Query Filters)
+## 4. กลุ่ม API: ระบบตรวจจับข้อเท็จจริงขัดแย้ง (Knowledge Conflicts API)
 
-* **`GET /api/v1/projects/{project_id}/knowledge-graph`**
-  - **Query Parameters:**
-    - `folder_id` (UUID, optional): กรองเฉพาะความรู้ที่สกัดจากโฟลเดอร์นี้
-    - `resource_id` (UUID, optional): กรองเฉพาะเอกสารเดี่ยว
-    - `node_type` (string, optional): เช่น `CONCEPT`, `TECH_ENTITY`, `ORGANIZATION`, `RULE`
-    - `tag` (string, optional): เช่น `Software`, `Pharmacy`, `Legal`
-    - `min_degree` (int, default=1): กรองเฉพาะ Hub Nodes ที่มีเส้นเชื่อมต่อตั้งแต่ N เส้นขึ้นไป
-    - `is_verified` (bool, optional): true = แสดงเฉพาะโหนดที่ทีมงานมนุษย์ตรวจทานแล้ว
-  - **Response (Filtered Graph):**
-    ```json
-    {
-      "nodes": [
-        {
-          "id": "uuid-node-fastapi",
-          "label": "FastAPI",
-          "node_type": "TECH_ENTITY",
-          "tag": "Software",
-          "degree": 5,
-          "is_verified": true,
-          "summary": "High-performance Python web framework"
-        }
-      ],
-      "edges": [
-        {
-          "id": "uuid-edge-1",
-          "source": "uuid-node-fastapi",
-          "target": "uuid-node-postgres",
-          "relation": "connects_to"
-        }
-      ]
-    }
-    ```
+* **`GET /api/v1/projects/{project_id}/conflicts`**
+  - รายการข้อขัดแย้งข้ามไฟล์ที่ AI ตรวจพบ
+* **`PATCH /api/v1/projects/{project_id}/conflicts/{conflict_id}`**
+  - เปลี่ยนสถานะข้อขัดแย้ง (`unresolved` -> `acknowledged` / `resolved`)
 
 ---
 
-## 5. กลุ่ม API: Living Glossary จำแนกด้วย Tags
+## 5. กลุ่ม API: ห้องทดลองกฎ AI (Rules Simulator API)
 
-* **`GET /api/v1/projects/{project_id}/glossaries?tag=Software&is_verified=true`**
-  - ค้นหาคำศัพท์แบบระบุ Tag และสถานะการตรวจทาน
-
----
-
-## 6. กลุ่ม API: การสนทนาส่วนตัวและขอบเขต (Private Chat & Scope Picker)
-
-* **`POST /api/v1/projects/{project_id}/chat/messages`**
-  - รองรับ Scope Filter (Default: ทั้งโปรเจกต์ หรือเลือกเฉพาะเจาะจง)
-  - ตอบกลับแบบ SSE Token Streaming พร้อม Citation พิกัดย่อหน้า/สไลด์/เซลล์
+* **`POST /api/v1/projects/{project_id}/rules/simulate`**
+  - ส่งคำถามจำลองเพื่อทดสอบกฎใน Sandbox
