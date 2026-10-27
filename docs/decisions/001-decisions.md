@@ -161,3 +161,31 @@ We simplified the universal viewer interaction model across all 7 resource forma
 ## Consequences
 - **Positive**: Zero layout shift during in-place editing; instant click-to-edit responsiveness; complete disambiguation between block confirmation and top-level SSoT commit; maximized vertical screen real estate in sidebars.
 - **Negative / Trade-offs**: Users who preferred raw markdown code editing in documents now interact with formatted semantic blocks rather than a raw syntax editor.
+
+---
+
+# ADR-009: Private Section Architecture and Strict Knowledge Index Isolation
+
+## Status
+Accepted
+
+## Context
+Users frequently create personal scratchpads, interim meeting notes, draft code experiments, or confidential resources that belong strictly to the individual user. When such files are placed in shared collections, they inadvertently get ingested into the team's semantic retrieval index, surfaced in Living Glossary concept links, counted in Knowledge Hub gap analysis, or evaluated during cross-source contradiction checks. Users required a dedicated "Private" section under Collections where personal resources reside, completely isolated from team knowledge grounding.
+
+## Decision
+We implemented a dedicated "Private" hierarchy in the workspace:
+1. **Private Section Placement**: Rendered a distinct "Private" section in the sidebar directly beneath Collections, marked with a lock indicator and "Personal only" subtitle.
+2. **Independent Tree & Root Hierarchy**: Maintained isolated `privateCollections` and `privateRootFiles` within client storage, supporting nested folders, unique sibling naming, root-level resources, and drag-and-drop.
+3. **Strict Knowledge Grounding Isolation**:
+   - Excluded private resources from the pgvector semantic retrieval index and team knowledge base.
+   - Omitted private resources from Living Glossary term scans and referenced resource links.
+   - Bypassed Knowledge Hub orphan gap detection and transclusion graphs for private content.
+   - Disabled cross-source fact-checking contradiction flags between private scratchpads and canonical team baselines.
+4. **Viewer Distinction & Local Persistence**:
+   - Displayed `Private / ...` breadcrumbs with a lock icon and a "Personal File" badge in the universal resource header.
+   - Suppressed external collaborator presence indicators (rendering "Personal File · Isolated") since private items belong exclusively to the user.
+   - Local commits persist to client private storage without polluting the canonical Single Source of Truth (SSoT).
+
+## Consequences
+- **Positive**: Complete privacy and isolation for personal scratchpad files; zero contamination of shared team retrieval embeddings, glossary citations, or knowledge gap statistics; clear visual identity in the universal viewer.
+- **Negative / Trade-offs**: Resources in the Private section cannot be transcluded by team documents or cited in public synthesis responses unless explicitly migrated to public Collections.

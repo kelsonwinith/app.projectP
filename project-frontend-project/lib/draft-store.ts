@@ -25,6 +25,7 @@ interface DraftStoreState {
   acquireCellLock: (resourceName: string, coordinate: string, user?: string) => void
   releaseCellLock: (resourceName: string, coordinate: string) => void
   saveImportedDocument: (resourceName: string, blocks: DocumentBlock[]) => void
+  renameResourceDrafts: (oldName: string, newName: string) => void
   getDraftsForResource: (resourceName: string) => Record<string, DraftBlock>
   getCommittedOverrides: (resourceName: string) => Record<string, string>
 }
@@ -130,6 +131,32 @@ export const useDraftStore = create<DraftStoreState>()(
             [resourceName]: blocks,
           },
         }))
+      },
+
+      renameResourceDrafts: (oldName, newName) => {
+        set((state) => {
+          const drafts = { ...state.drafts }
+          if (drafts[oldName]) {
+            drafts[newName] = drafts[oldName]
+            delete drafts[oldName]
+          }
+          const committedOverrides = { ...state.committedOverrides }
+          if (committedOverrides[oldName]) {
+            committedOverrides[newName] = committedOverrides[oldName]
+            delete committedOverrides[oldName]
+          }
+          const cellLocks = { ...state.cellLocks }
+          if (cellLocks[oldName]) {
+            cellLocks[newName] = cellLocks[oldName]
+            delete cellLocks[oldName]
+          }
+          const importedDocuments = { ...state.importedDocuments }
+          if (importedDocuments[oldName]) {
+            importedDocuments[newName] = importedDocuments[oldName]
+            delete importedDocuments[oldName]
+          }
+          return { drafts, committedOverrides, cellLocks, importedDocuments }
+        })
       },
 
       getDraftsForResource: (resourceName) => {

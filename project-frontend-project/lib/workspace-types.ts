@@ -12,6 +12,7 @@ export type Collection = {
   open: boolean
   children: string[]
   folders?: Collection[]
+  isPrivate?: boolean
 }
 
 export type Resource = {
@@ -21,6 +22,7 @@ export type Resource = {
   color: string
   detail: string
   content?: string
+  isPrivate?: boolean
 }
 
 export type ChatMessageItem = {

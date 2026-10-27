@@ -101,7 +101,7 @@ const TRANSCLUSIONS: TransclusionNode[] = [
 ]
 
 export default function KnowledgeHubPage() {
-  const { createResource, sendMessage, openResourceAndChat } = useWorkspace()
+  const { createResource, sendMessage, openResourceAndChat, isResourcePrivate } = useWorkspace()
   const [searchQuery, setSearchQuery] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("gaps")
   const [gaps, setGaps] = React.useState<KnowledgeGap[]>(INITIAL_GAPS)
@@ -311,7 +311,7 @@ export default function KnowledgeHubPage() {
                                   {gap.mentions} mentions
                                 </Badge>
                                 <span className="text-[11px] text-[#637080] dark:text-[#90a0b2]">
-                                  Cited in: {gap.sourceDocs.join(", ")}
+                                  Cited in: {gap.sourceDocs.filter((d) => !isResourcePrivate(d)).join(", ")}
                                 </span>
                               </div>
                             </div>
@@ -403,7 +403,9 @@ export default function KnowledgeHubPage() {
                         <span className="font-medium text-[#17212b] dark:text-[#e8edf2]">
                           Transcluded into:
                         </span>
-                        {t.referencedBy.map((ref) => (
+                        {t.referencedBy
+                          .filter((ref) => !isResourcePrivate(ref))
+                          .map((ref) => (
                           <Badge
                             key={ref}
                             variant="secondary"

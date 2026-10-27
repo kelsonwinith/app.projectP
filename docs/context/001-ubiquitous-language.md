@@ -16,3 +16,4 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
 | Conflict Detection | Automated verification identifying contradicting statements, metrics, or policies across workspace resources, triggered on generate and on save. | Contradiction check, fact discrepancy check, claim diff |
 | Knowledge Gap | A domain entity or concept referenced repeatedly across workspace resources that lacks an authoritative defining resource. | Orphan concept, missing doc, dead link |
 | 3-Tab Save Modal | A modal inspection interface presenting Original, Proposed with Diff, and Notes & Conflicts tabs prior to staging commits. | Save popup, commit dialog, staging modal |
+| Private Section | A dedicated personal workspace hierarchy under Collections whose resources belong solely to the user and are strictly isolated from the shared knowledge index, living glossary, and contradiction detection. | Secret folder, private space, hidden drive |

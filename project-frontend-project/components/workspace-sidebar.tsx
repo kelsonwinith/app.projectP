@@ -12,7 +12,9 @@ import {
   Folder,
   FolderPlus,
   ImageIcon,
+  Lock,
   Network,
+  Pencil,
   Plus,
   Presentation,
   Settings2,
@@ -100,14 +102,29 @@ function DraggableFileItem({
   collectionName: string
 }) {
   const [isMounted, setIsMounted] = React.useState(false)
+  const [isRenaming, setIsRenaming] = React.useState(false)
+  const [renameValue, setRenameValue] = React.useState(name)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
   React.useEffect(() => {
     setIsMounted(true)
   }, [])
 
-  const { openResourceAndChat, deleteTarget, allResources } = useWorkspace()
+  React.useEffect(() => {
+    if (isRenaming) {
+      setRenameValue(name)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 50)
+    }
+  }, [isRenaming, name])
+
+  const { openResourceAndChat, deleteTarget, renameResource, allResources } = useWorkspace()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `file:${collectionName}:${name}`,
     data: { name, collectionName },
+    disabled: isRenaming,
   })
 
   const style: React.CSSProperties = {
@@ -117,32 +134,77 @@ function DraggableFileItem({
 
   const { icon: Icon, color } = getResourceMeta(name, allResources)
 
+  const commitRename = () => {
+    setIsRenaming(false)
+    const trimmed = renameValue.trim()
+    if (trimmed && trimmed !== name) {
+      renameResource(name, trimmed)
+    } else {
+      setRenameValue(name)
+    }
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
         <div
           ref={setNodeRef}
           style={style}
-          {...(isMounted ? attributes : {})}
-          {...(isMounted ? listeners : {})}
+          {...(isMounted && !isRenaming ? attributes : {})}
+          {...(isMounted && !isRenaming ? listeners : {})}
           suppressHydrationWarning
-          className={`group flex w-full items-center justify-between rounded-[9px] px-2 py-1.5 text-left text-[13px] text-[#637080] dark:text-[#90a0b2] hover:bg-[#f7f8fa] dark:hover:bg-[#1f2937]/50 hover:text-[#1c5da7] dark:hover:text-[#60a5fa] transition-colors cursor-grab active:cursor-grabbing select-none ${
+          className={`group flex w-full items-center justify-between rounded-[9px] px-2 py-1.5 text-left text-[13px] text-[#637080] dark:text-[#90a0b2] hover:bg-[#f7f8fa] dark:hover:bg-[#1f2937]/50 hover:text-[#1c5da7] dark:hover:text-[#60a5fa] transition-colors select-none ${
+            isRenaming ? "bg-[#eef3f9] dark:bg-[#1c2736]" : "cursor-grab active:cursor-grabbing"
+          } ${
             isDragging ? "opacity-30 ring-1 ring-[#1c5da7] bg-blue-50 dark:bg-blue-950/40" : ""
           }`}
         >
-          <button
-            type="button"
-            onClick={() => openResourceAndChat(name)}
-            className="flex items-center gap-2 flex-1 min-w-0 text-left"
-          >
-            <Icon className={`size-3.5 shrink-0 ${color}`} />
-            <span className="truncate">{name}</span>
-          </button>
+          {isRenaming ? (
+            <div
+              className="flex items-center gap-2 flex-1 min-w-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <Icon className={`size-3.5 shrink-0 ${color}`} />
+              <input
+                ref={inputRef}
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    commitRename()
+                  } else if (e.key === "Escape") {
+                    e.preventDefault()
+                    setIsRenaming(false)
+                    setRenameValue(name)
+                  }
+                }}
+                onBlur={commitRename}
+                className="h-6 w-full rounded border border-[#1c5da7] bg-white dark:bg-[#161c24] px-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#1c5da7]"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openResourceAndChat(name)}
+              className="flex items-center gap-2 flex-1 min-w-0 text-left"
+            >
+              <Icon className={`size-3.5 shrink-0 ${color}`} />
+              <span className="truncate">{name}</span>
+            </button>
+          )}
         </div>
       </ContextMenuTrigger>
 
       {/* Right-click Context Menu for File */}
       <ContextMenuContent className="w-36 text-xs">
+        <ContextMenuItem onClick={() => setIsRenaming(true)}>
+          <Pencil className="size-3.5 mr-2" />
+          <span>Rename</span>
+        </ContextMenuItem>
+        <ContextMenuSeparator />
         <ContextMenuItem
           onClick={() => deleteTarget(name, "resource")}
           variant="destructive"
@@ -159,13 +221,29 @@ function DraggableFileItem({
 function DroppableFolderItem({
   collection,
   level = 0,
+  isPrivate = false,
   onTriggerImport,
 }: {
   collection: Collection
   level?: number
-  onTriggerImport?: (target: string) => void
+  isPrivate?: boolean
+  onTriggerImport?: (target: string, isPrivate?: boolean) => void
 }) {
-  const { toggleCollection, addFolder, deleteTarget, createResource } = useWorkspace()
+  const { toggleCollection, addFolder, deleteTarget, createResource, renameFolder } = useWorkspace()
+  const [isRenaming, setIsRenaming] = React.useState(false)
+  const [renameValue, setRenameValue] = React.useState(collection.name)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    if (isRenaming) {
+      setRenameValue(collection.name)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 50)
+    }
+  }, [isRenaming, collection.name])
+
   const folderId = collection.id || collection.name
   const { setNodeRef, isOver } = useDroppable({
     id: `folder:${folderId}`,
@@ -174,6 +252,16 @@ function DroppableFolderItem({
 
   const folders = [...(collection.folders ?? [])].sort((a, b) => a.name.localeCompare(b.name))
   const files = [...collection.children].sort((a, b) => a.localeCompare(b))
+
+  const commitRename = () => {
+    setIsRenaming(false)
+    const trimmed = renameValue.trim()
+    if (trimmed && trimmed !== collection.name) {
+      renameFolder(folderId, trimmed)
+    } else {
+      setRenameValue(collection.name)
+    }
+  }
 
   return (
     <div key={`${folderId}-${level}`}>
@@ -189,7 +277,7 @@ function DroppableFolderItem({
           >
             <button
               type="button"
-              onClick={() => toggleCollection(folderId)}
+              onClick={() => !isRenaming && toggleCollection(folderId)}
               className="flex items-center gap-2 flex-1 min-w-0 text-left"
             >
               <ChevronRight
@@ -199,13 +287,46 @@ function DroppableFolderItem({
               />
               <Folder
                 className={`size-4 shrink-0 transition-colors ${
-                  isOver ? "text-[#1c5da7]" : "text-[#e2a93b]"
+                  isOver
+                    ? "text-[#1c5da7]"
+                    : isPrivate
+                    ? "text-amber-500/90 dark:text-amber-400/90"
+                    : "text-[#e2a93b]"
                 }`}
               />
-              <span className="truncate">{collection.name}</span>
-              <span className="ml-auto text-[11px] text-[#a7b0bc] dark:text-[#64748b] font-mono">
-                {collection.children.length}
-              </span>
+              {isRenaming ? (
+                <div
+                  className="flex-1 min-w-0"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault()
+                        commitRename()
+                      } else if (e.key === "Escape") {
+                        e.preventDefault()
+                        setIsRenaming(false)
+                        setRenameValue(collection.name)
+                      }
+                    }}
+                    onBlur={commitRename}
+                    className="h-6 w-full rounded border border-[#1c5da7] bg-white dark:bg-[#161c24] px-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[#1c5da7]"
+                  />
+                </div>
+              ) : (
+                <>
+                  <span className="truncate">{collection.name}</span>
+                  <span className="ml-auto text-[11px] text-[#a7b0bc] dark:text-[#64748b] font-mono">
+                    {collection.children.length}
+                  </span>
+                </>
+              )}
             </button>
           </div>
         </ContextMenuTrigger>
@@ -213,7 +334,7 @@ function DroppableFolderItem({
         {/* Right-click Context Menu for Folder */}
         <ContextMenuContent className="w-48 text-xs">
           <ContextMenuGroup>
-            <ContextMenuItem onClick={() => addFolder(folderId)}>
+            <ContextMenuItem onClick={() => addFolder(folderId, isPrivate)}>
               <FolderPlus className="size-3.5 mr-2" />
               <span>New Folder</span>
             </ContextMenuItem>
@@ -230,7 +351,7 @@ function DroppableFolderItem({
                   return (
                     <ContextMenuItem
                       key={res.type}
-                      onClick={() => createResource(res.type, folderId)}
+                      onClick={() => createResource(res.type, folderId, isPrivate)}
                     >
                       <Icon className={`size-3.5 mr-2 ${res.color}`} />
                       <span>{res.label}</span>
@@ -239,12 +360,17 @@ function DroppableFolderItem({
                 })}
               </ContextMenuSubContent>
             </ContextMenuSub>
+
+            <ContextMenuItem onClick={() => setIsRenaming(true)}>
+              <Pencil className="size-3.5 mr-2" />
+              <span>Rename Folder</span>
+            </ContextMenuItem>
           </ContextMenuGroup>
 
           <ContextMenuSeparator />
 
           {/* Direct Import Button to Open Finder / File Explorer */}
-          <ContextMenuItem onClick={() => onTriggerImport?.(folderId)}>
+          <ContextMenuItem onClick={() => onTriggerImport?.(folderId, isPrivate)}>
             <Upload className="size-3.5 mr-2" />
             <span>Import...</span>
           </ContextMenuItem>
@@ -268,6 +394,7 @@ function DroppableFolderItem({
               key={folder.id || folder.name}
               collection={folder}
               level={level + 1}
+              isPrivate={isPrivate}
               onTriggerImport={onTriggerImport}
             />
           ))}
@@ -284,16 +411,24 @@ function DroppableFolderItem({
   )
 }
 
-function RootDroppableContainer({ children }: { children: React.ReactNode }) {
+function DroppableContainer({
+  id = "folder:root",
+  collectionName = "root",
+  children,
+}: {
+  id?: string
+  collectionName?: string
+  children: React.ReactNode
+}) {
   const { setNodeRef, isOver } = useDroppable({
-    id: "folder:root",
-    data: { collectionName: "root" },
+    id,
+    data: { collectionName },
   })
 
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-full transition-colors rounded-lg ${
+      className={`flex-1 min-h-full transition-colors rounded-lg flex flex-col ${
         isOver ? "bg-blue-50/60 dark:bg-blue-950/30 ring-2 ring-dashed ring-[#1c5da7]" : ""
       }`}
     >
@@ -304,21 +439,31 @@ function RootDroppableContainer({ children }: { children: React.ReactNode }) {
 
 export function WorkspaceSidebar() {
   const pathname = usePathname()
-  const { collections, rootFiles, addFolder, createResource, moveResource, importFiles } =
-    useWorkspace()
+  const {
+    collections,
+    rootFiles,
+    privateCollections,
+    privateRootFiles,
+    addFolder,
+    createResource,
+    moveResource,
+    importFiles,
+  } = useWorkspace()
 
   // File input ref for import functionality (Finder / File Explorer)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [importTarget, setImportTarget] = React.useState<string>("root")
+  const [importIsPrivate, setImportIsPrivate] = React.useState<boolean>(false)
 
-  const triggerImport = (target: string = "root") => {
+  const triggerImport = (target: string = "root", isPrivate: boolean = false) => {
     setImportTarget(target)
+    setImportIsPrivate(isPrivate)
     fileInputRef.current?.click()
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      importFiles(e.target.files, importTarget)
+      importFiles(e.target.files, importTarget, importIsPrivate)
       e.target.value = "" // Reset so same file can be imported again if needed
     }
   }
@@ -393,92 +538,181 @@ export function WorkspaceSidebar() {
         </nav>
       </div>
 
-      {/* Collections Header (Topic) */}
-      <div className="shrink-0 px-3 pt-4 pb-1">
-        <div className="flex items-center justify-between px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a0a9b5] dark:text-[#64748b]">
-          <span>Collections</span>
-        </div>
-      </div>
-
-      {/* Collections Section: The ONLY part of the side panel allowed to scroll */}
+      {/* Collections & Private Scrollable Area: The ONLY part of the side panel allowed to scroll */}
       <div className="flex-1 min-h-0 overflow-hidden px-3 py-1">
-        <ContextMenu>
-          <ContextMenuTrigger className="h-full block">
-            <ScrollArea className="h-full pr-1">
-              <DndContext id="workspace-sidebar-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
-                <RootDroppableContainer>
-                  {collections.length > 0 || (rootFiles && rootFiles.length > 0) ? (
-                    <div className="flex flex-col gap-0.5 min-h-[140px]">
-                      {/* Folders */}
-                      {collections.map((col) => (
-                        <DroppableFolderItem
-                          key={col.id || col.name}
-                          collection={col}
-                          onTriggerImport={triggerImport}
-                        />
-                      ))}
-
-                      {/* Root-Level Resources */}
-                      {(rootFiles ?? []).map((fileName) => (
-                        <DraggableFileItem
-                          key={fileName}
-                          name={fileName}
-                          collectionName="root"
-                        />
-                      ))}
+        <ScrollArea className="h-full pr-1">
+          <DndContext id="workspace-sidebar-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="flex flex-col min-h-full">
+              {/* 1. Public Collections Section */}
+              <div className="mb-1 shrink-0">
+                <ContextMenu>
+                  <ContextMenuTrigger className="block w-full">
+                    <div className="flex items-center justify-between px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a0a9b5] dark:text-[#64748b]">
+                      <span>Collections</span>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 px-2 text-center text-[#8a95a3] dark:text-[#64748b] min-h-[180px]">
-                      <Folder className="size-7 text-[#cbd5e1] dark:text-[#334155] mb-2 stroke-[1.5]" />
-                      <p className="text-[12px] font-medium text-[#475569] dark:text-[#94a3b8]">
-                        No resources yet
-                      </p>
-                      <p className="text-[10px] text-[#94a3b8] dark:text-[#64748b] mt-0.5 leading-tight">
-                        Right-click anywhere here to create a folder or resource
-                      </p>
-                    </div>
-                  )}
-                </RootDroppableContainer>
-              </DndContext>
-            </ScrollArea>
-          </ContextMenuTrigger>
 
-          {/* Right-click Context Menu on Folders Empty Area */}
-          <ContextMenuContent className="w-48 text-xs">
-            <ContextMenuItem onClick={() => addFolder()}>
-              <FolderPlus className="size-3.5 mr-2" />
-              <span>New Folder</span>
-            </ContextMenuItem>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                <Plus className="size-3.5 mr-2" />
-                <span>New Resource</span>
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-44 text-xs">
-                {CREATABLE_RESOURCE_TYPES.map((res) => {
-                  const Icon = res.icon
-                  return (
-                    <ContextMenuItem
-                      key={res.type}
-                      onClick={() => createResource(res.type, "root")}
-                    >
-                      <Icon className={`size-3.5 mr-2 ${res.color}`} />
-                      <span>{res.label}</span>
+                    <DroppableContainer id="folder:root" collectionName="root">
+                      {collections.length > 0 || (rootFiles && rootFiles.length > 0) ? (
+                        <div className="flex flex-col gap-0.5 min-h-[40px]">
+                          {/* Public Folders */}
+                          {collections.map((col) => (
+                            <DroppableFolderItem
+                              key={col.id || col.name}
+                              collection={col}
+                              onTriggerImport={(target) => triggerImport(target, false)}
+                            />
+                          ))}
+
+                          {/* Public Root-Level Resources */}
+                          {(rootFiles ?? []).map((fileName) => (
+                            <DraggableFileItem
+                              key={fileName}
+                              name={fileName}
+                              collectionName="root"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 px-2 text-center text-[#8a95a3] dark:text-[#64748b]">
+                          <Folder className="size-6 text-[#cbd5e1] dark:text-[#334155] mb-1.5 stroke-[1.5]" />
+                          <p className="text-[11px] font-medium text-[#475569] dark:text-[#94a3b8]">
+                            No resources yet
+                          </p>
+                          <p className="text-[9px] text-[#94a3b8] dark:text-[#64748b] mt-0.5 leading-tight">
+                            Right-click to create
+                          </p>
+                        </div>
+                      )}
+                    </DroppableContainer>
+                  </ContextMenuTrigger>
+
+                  {/* Right-click Context Menu on Public Empty Area */}
+                  <ContextMenuContent className="w-48 text-xs">
+                    <ContextMenuItem onClick={() => addFolder(undefined, false)}>
+                      <FolderPlus className="size-3.5 mr-2" />
+                      <span>New Folder</span>
                     </ContextMenuItem>
-                  )
-                })}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <Plus className="size-3.5 mr-2" />
+                        <span>New Resource</span>
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-44 text-xs">
+                        {CREATABLE_RESOURCE_TYPES.map((res) => {
+                          const Icon = res.icon
+                          return (
+                            <ContextMenuItem
+                              key={res.type}
+                              onClick={() => createResource(res.type, "root", false)}
+                            >
+                              <Icon className={`size-3.5 mr-2 ${res.color}`} />
+                              <span>{res.label}</span>
+                            </ContextMenuItem>
+                          )
+                        })}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
 
-            <ContextMenuSeparator />
+                    <ContextMenuSeparator />
 
-            {/* Direct Import Button to Open Finder / File Explorer */}
-            <ContextMenuItem onClick={() => triggerImport("root")}>
-              <Upload className="size-3.5 mr-2" />
-              <span>Import...</span>
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+                    <ContextMenuItem onClick={() => triggerImport("root", false)}>
+                      <Upload className="size-3.5 mr-2" />
+                      <span>Import...</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
+
+              {/* Divider */}
+              <div className="my-2 border-t border-[#edf0f3] dark:border-[#242e3a] shrink-0" />
+
+              {/* 2. Private Section (Belong to user only, excluded from knowledge) */}
+              <div className="flex-1 flex flex-col min-h-[220px]">
+                <ContextMenu>
+                  <ContextMenuTrigger className="flex-1 flex flex-col min-h-[220px] w-full block">
+                    <div className="flex items-center justify-between px-2 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a0a9b5] dark:text-[#64748b]">
+                      <span className="flex items-center gap-1.5 text-amber-600/90 dark:text-amber-500/90 font-medium">
+                        <Lock className="size-3" />
+                        Private
+                      </span>
+                      <span className="text-[9px] font-normal normal-case text-muted-foreground/70">Personal only</span>
+                    </div>
+
+                    <DroppableContainer id="folder:private:root" collectionName="private:root">
+                      {privateCollections.length > 0 || (privateRootFiles && privateRootFiles.length > 0) ? (
+                        <div className="flex flex-col gap-0.5 flex-1 min-h-[40px]">
+                          {/* Private Folders */}
+                          {privateCollections.map((col) => (
+                            <DroppableFolderItem
+                              key={col.id || col.name}
+                              collection={col}
+                              isPrivate
+                              onTriggerImport={(target) => triggerImport(target, true)}
+                            />
+                          ))}
+
+                          {/* Private Root-Level Resources */}
+                          {(privateRootFiles ?? []).map((fileName) => (
+                            <DraggableFileItem
+                              key={fileName}
+                              name={fileName}
+                              collectionName="private:root"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 px-2 text-center text-[#8a95a3] dark:text-[#64748b] rounded-lg border border-dashed border-[#e2e8f0] dark:border-[#242e3a] bg-amber-500/5 my-1">
+                          <Lock className="size-4 text-amber-500/70 mb-1 stroke-[1.5]" />
+                          <p className="text-[11px] font-medium text-[#475569] dark:text-[#94a3b8]">
+                            No private resources
+                          </p>
+                          <p className="text-[9px] text-[#94a3b8] dark:text-[#64748b] mt-0.5 leading-tight max-w-[170px]">
+                            Personal files isolated from team knowledge. Right-click to create.
+                          </p>
+                        </div>
+                      )}
+                    </DroppableContainer>
+                  </ContextMenuTrigger>
+
+                  {/* Right-click Context Menu on Private Area */}
+                  <ContextMenuContent className="w-48 text-xs">
+                    <ContextMenuItem onClick={() => addFolder(undefined, true)}>
+                      <FolderPlus className="size-3.5 mr-2 text-amber-600 dark:text-amber-400" />
+                      <span>New Private Folder</span>
+                    </ContextMenuItem>
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <Plus className="size-3.5 mr-2 text-amber-600 dark:text-amber-400" />
+                        <span>New Private Resource</span>
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-44 text-xs">
+                        {CREATABLE_RESOURCE_TYPES.map((res) => {
+                          const Icon = res.icon
+                          return (
+                            <ContextMenuItem
+                              key={res.type}
+                              onClick={() => createResource(res.type, "private:root", true)}
+                            >
+                              <Icon className={`size-3.5 mr-2 ${res.color}`} />
+                              <span>{res.label}</span>
+                            </ContextMenuItem>
+                          )
+                        })}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+
+                    <ContextMenuSeparator />
+
+                    <ContextMenuItem onClick={() => triggerImport("private:root", true)}>
+                      <Upload className="size-3.5 mr-2 text-amber-600 dark:text-amber-400" />
+                      <span>Import Private...</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
+            </div>
+          </DndContext>
+        </ScrollArea>
       </div>
 
       {/* Hidden File Input for Import (allows single or multiple file selection in Finder / File Explorer) */}

@@ -100,7 +100,7 @@ const INITIAL_TERMS: CanonicalTerm[] = [
 ]
 
 export default function GlossaryPage() {
-  const { openResourceAndChat } = useWorkspace()
+  const { openResourceAndChat, isResourcePrivate } = useWorkspace()
   const [search, setSearch] = React.useState("")
   const [selectedCategory, setSelectedCategory] = React.useState<string>("All")
   const [terms, setTerms] = React.useState<CanonicalTerm[]>(INITIAL_TERMS)
@@ -356,16 +356,18 @@ export default function GlossaryPage() {
                     Referenced in:
                   </span>
                   <div className="flex items-center gap-1.5">
-                    {term.linkedResources.map((res) => (
-                      <button
-                        key={res}
-                        type="button"
-                        onClick={() => openResourceAndChat(res)}
-                        className="text-[11px] font-medium text-[#1c5da7] dark:text-[#60a5fa] hover:underline"
-                      >
-                        {res}
-                      </button>
-                    ))}
+                    {term.linkedResources
+                      .filter((res) => !isResourcePrivate(res))
+                      .map((res) => (
+                        <button
+                          key={res}
+                          type="button"
+                          onClick={() => openResourceAndChat(res)}
+                          className="text-[11px] font-medium text-[#1c5da7] dark:text-[#60a5fa] hover:underline"
+                        >
+                          {res}
+                        </button>
+                      ))}
                   </div>
                 </div>
               </CardContent>

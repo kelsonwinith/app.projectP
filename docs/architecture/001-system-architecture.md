@@ -85,3 +85,14 @@ In tabular resources, concurrency control is scoped to targeted cells:
 Conflict detection executes during two discrete phases:
 1. **On Generate:** When AI or the assistant proposes a newly synthesized resource or draft, it cross-references assertions against indexed workspace resources. Any contradictory metrics or policy dates trigger a warning badge before creation.
 2. **On Save:** During 3-tab save modal inspection, newly staged blocks are checked against existing resources, displaying severity tags (`critical`, `warning`) in Tab 3.
+
+---
+
+## 6. Private Section & Knowledge Index Isolation Architecture
+
+To guarantee personal data sovereignty without polluting workspace grounding:
+1. **Partitioned Store Hierarchy:** The local-first collection store partitions hierarchy into public (`collections`, `rootFiles`) and private (`privateCollections`, `privateRootFiles`) state trees.
+2. **Index Boundary Invariant:**
+   - Vector embedding pipelines, living glossary term matchers, and contradiction scanners filter out any resource matching `isResourcePrivate(name)`.
+   - Assistant chat sessions in private mode acknowledge personal isolation and suppress public SSoT citations.
+3. **Collaborative Presence Boundary:** External multi-user presence avatars and locks are deactivated for private files, displaying a single-user isolated state badge.

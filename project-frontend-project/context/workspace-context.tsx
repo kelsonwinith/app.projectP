@@ -26,8 +26,11 @@ import {
 interface WorkspaceContextType {
   collections: Collection[]
   rootFiles: string[]
+  privateCollections: Collection[]
+  privateRootFiles: string[]
   resources: Resource[]
   allResources: Resource[]
+  knowledgeResources: Resource[]
   openResource: string | null
   deletedResources: string[]
   chat: string
@@ -46,14 +49,17 @@ interface WorkspaceContextType {
   openResourceAndChat: (name: string) => void
   closeResource: () => void
   toggleCollection: (name: string) => void
-  addFolder: (parentName?: string) => string
-  createResource: (type: string, targetCollection?: string) => void
-  importFiles: (files: FileList | File[], targetCollection?: string) => Promise<void>
-  moveResource: (resourceName: string, targetCollection: string) => void
+  addFolder: (parentName?: string, isPrivate?: boolean) => string
+  createResource: (type: string, targetCollection?: string, isPrivate?: boolean) => void
+  importFiles: (files: FileList | File[], targetCollection?: string, isPrivate?: boolean) => Promise<void>
+  moveResource: (resourceName: string, targetCollection: string, isPrivate?: boolean) => void
   deleteTarget: (target: string, kind: "collection" | "resource") => void
+  renameResource: (oldName: string, newName: string) => void
+  renameFolder: (targetId: string, newName: string) => void
   sendMessage: (customText?: string) => void
   handleSaveDraft: (draft: { title: string; type: string; preview: string }) => void
   handleMiniChatDragStart: (event: React.MouseEvent) => void
+  isResourcePrivate: (name: string) => boolean
 }
 
 const WorkspaceContext = React.createContext<WorkspaceContextType | null>(null)
@@ -73,11 +79,16 @@ function getAllResourceNamesFromCollections(collections: Collection[], rootFiles
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const collections = useCollectionStore((state) => state.collections)
   const rootFiles = useCollectionStore((state) => state.rootFiles)
+  const privateCollections = useCollectionStore((state) => state.privateCollections)
+  const privateRootFiles = useCollectionStore((state) => state.privateRootFiles)
   const toggleCollection = useCollectionStore((state) => state.toggleCollection)
-  const addFolder = useCollectionStore((state) => state.addFolder)
+  const addFolderInStore = useCollectionStore((state) => state.addFolder)
   const addResourceToCollection = useCollectionStore((state) => state.addResourceToCollection)
   const moveResource = useCollectionStore((state) => state.moveResource)
   const deleteTargetFromStore = useCollectionStore((state) => state.deleteTarget)
+  const renameFolderInStore = useCollectionStore((state) => state.renameFolder)
+  const renameResourceInStore = useCollectionStore((state) => state.renameResource)
+  const isResourcePrivate = useCollectionStore((state) => state.isResourcePrivate)
 
   const router = useRouter()
   const pathname = usePathname()
@@ -100,17 +111,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return [...DEFAULT_RESOURCES, ...createdResources]
   }, [createdResources])
 
+  // Public knowledge resources: Strictly excludes any private resource from semantic index and living glossary
+  const knowledgeResources = React.useMemo(() => {
+    return allResources.filter((r) => !isResourcePrivate(r.name))
+  }, [allResources, isResourcePrivate])
+
   const openResourceAndChat = React.useCallback(
     (name: string) => {
       setOpenResource(name)
       setChatMode("full")
-      const path = findResourcePath(name, collections, rootFiles)
+      const path = findResourcePath(name, collections, rootFiles, privateCollections, privateRootFiles)
       const targetUrl = `/resources/${path.map(encodeURIComponent).join("/")}`
       if (pathname !== targetUrl) {
         router.push(targetUrl)
       }
     },
-    [collections, rootFiles, pathname, router]
+    [collections, rootFiles, privateCollections, privateRootFiles, pathname, router]
   )
 
   const closeResource = React.useCallback(() => {
@@ -121,15 +137,27 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router])
 
+  const addFolder = React.useCallback(
+    (parentName?: string, isPrivate?: boolean) => {
+      return addFolderInStore(parentName, undefined, isPrivate)
+    },
+    [addFolderInStore]
+  )
+
   const createResource = React.useCallback(
-    (type: string, targetCollection?: string) => {
+    (type: string, targetCollection?: string, isPrivate?: boolean) => {
       const template =
         DEFAULT_RESOURCES.find((item) => item.type === type) ?? DEFAULT_RESOURCES[0]
 
-      // Sibling-scoped unique file naming: check only the destination folder or root!
-      let siblingFiles: string[] = rootFiles
-      if (targetCollection && targetCollection !== "root") {
-        const folder = findFolder(collections, targetCollection)
+      const inPrivate =
+        isPrivate ||
+        targetCollection === "private:root" ||
+        (targetCollection ? !!findFolder(privateCollections, targetCollection) : false)
+
+      const targetTree = inPrivate ? privateCollections : collections
+      let siblingFiles: string[] = inPrivate ? privateRootFiles : rootFiles
+      if (targetCollection && targetCollection !== "root" && targetCollection !== "private:root") {
+        const folder = findFolder(targetTree, targetCollection)
         if (folder) {
           siblingFiles = folder.children
         }
@@ -143,20 +171,27 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         name,
         type,
         detail: `${type} resource · created just now`,
+        isPrivate: inPrivate,
       }
       setCreatedResources((current) => [...current.filter((r) => r.name !== name), resource])
-      addResourceToCollection(targetCollection || "root", name)
+      addResourceToCollection(targetCollection || (inPrivate ? "private:root" : "root"), name, inPrivate)
       openResourceAndChat(name)
     },
-    [collections, rootFiles, openResourceAndChat, addResourceToCollection]
+    [collections, rootFiles, privateCollections, privateRootFiles, openResourceAndChat, addResourceToCollection]
   )
 
   const importFiles = React.useCallback(
-    async (files: FileList | File[], targetCollection?: string) => {
+    async (files: FileList | File[], targetCollection?: string, isPrivate?: boolean) => {
       const fileList = Array.from(files)
       if (fileList.length === 0) return
 
-      let effectiveTarget = targetCollection || "root"
+      const inPrivate =
+        isPrivate ||
+        targetCollection === "private:root" ||
+        (targetCollection ? !!findFolder(privateCollections, targetCollection) : false)
+
+      let effectiveTarget = targetCollection || (inPrivate ? "private:root" : "root")
+      const targetTree = inPrivate ? privateCollections : collections
       let firstResourceName: string | null = null
 
       for (const file of fileList) {
@@ -165,13 +200,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           const parts = file.webkitRelativePath.split("/")
           if (parts.length > 1) {
             const folderName = parts[0]
-            const existingFolder = findFolder(collections, folderName)
+            const existingFolder = findFolder(targetTree, folderName)
             if (existingFolder) {
               folderForFile = existingFolder.id || existingFolder.name
             } else {
               folderForFile = addFolder(
-                effectiveTarget !== "root" ? effectiveTarget : undefined,
-                folderName
+                effectiveTarget !== "root" && effectiveTarget !== "private:root" ? effectiveTarget : undefined,
+                inPrivate
               )
             }
           }
@@ -183,9 +218,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const baseName = cleanBaseName(file.name)
 
         // 2. Check siblings in destination
-        let siblingFiles: string[] = rootFiles
-        if (folderForFile && folderForFile !== "root") {
-          const folder = findFolder(collections, folderForFile)
+        let siblingFiles: string[] = inPrivate ? privateRootFiles : rootFiles
+        if (folderForFile && folderForFile !== "root" && folderForFile !== "private:root") {
+          const folder = findFolder(targetTree, folderForFile)
           if (folder) {
             siblingFiles = folder.children
           }
@@ -210,10 +245,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           name,
           type: resourceType,
           detail: `${resourceType} · imported from ${file.name}`,
+          isPrivate: inPrivate,
         }
 
         setCreatedResources((current) => [...current.filter((r) => r.name !== name), resource])
-        addResourceToCollection(folderForFile, name)
+        addResourceToCollection(folderForFile, name, inPrivate)
 
         if (!firstResourceName) {
           firstResourceName = name
@@ -224,7 +260,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         openResourceAndChat(firstResourceName)
       }
     },
-    [collections, rootFiles, addFolder, addResourceToCollection, openResourceAndChat]
+    [collections, rootFiles, privateCollections, privateRootFiles, addFolder, addResourceToCollection, openResourceAndChat]
   )
 
   const deleteTarget = React.useCallback(
@@ -239,6 +275,41 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [deleteTargetFromStore]
+  )
+
+  const renameResource = React.useCallback(
+    (oldName: string, newName: string) => {
+      const trimmed = newName.trim()
+      if (!trimmed || trimmed === oldName) return
+      renameResourceInStore(oldName, trimmed)
+      useDraftStore.getState().renameResourceDrafts(oldName, trimmed)
+      setCreatedResources((current) =>
+        current.map((r) => (r.name === oldName ? { ...r, name: trimmed } : r))
+      )
+      if (openResource === oldName) {
+        setOpenResource(trimmed)
+        const path = findResourcePath(trimmed, collections, rootFiles, privateCollections, privateRootFiles)
+        const targetUrl = `/resources/${path.map(encodeURIComponent).join("/")}`
+        router.replace(targetUrl)
+      }
+    },
+    [renameResourceInStore, openResource, collections, rootFiles, privateCollections, privateRootFiles, router]
+  )
+
+  const renameFolder = React.useCallback(
+    (targetId: string, newName: string) => {
+      const trimmed = newName.trim()
+      if (!trimmed) return
+      renameFolderInStore(targetId, trimmed)
+      if (openResource) {
+        const path = findResourcePath(openResource, collections, rootFiles, privateCollections, privateRootFiles)
+        const targetUrl = `/resources/${path.map(encodeURIComponent).join("/")}`
+        if (pathname !== targetUrl && pathname.startsWith("/resources")) {
+          router.replace(targetUrl)
+        }
+      }
+    },
+    [renameFolderInStore, openResource, collections, rootFiles, privateCollections, privateRootFiles, pathname, router]
   )
 
   const handleSaveDraft = React.useCallback(
@@ -267,6 +338,18 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!customText) setChat("")
 
       window.setTimeout(() => {
+        const isCurrentPrivate = openResource ? isResourcePrivate(openResource) : false
+
+        if (isCurrentPrivate) {
+          const assistantMsg: ChatMessageItem = {
+            role: "assistant",
+            text: `[Private Resource Mode] This note is stored in your personal Private collection and is strictly excluded from team knowledge grounding, Living Glossary, and SSoT conflict scans.\n\nResponding directly to your query about "${openResource}": everything looks well structured.`,
+            faithfulnessScore: 100,
+          }
+          setMessages((current) => [...current, assistantMsg])
+          return
+        }
+
         const isConflict =
           message.toLowerCase().includes("conflict") ||
           message.toLowerCase().includes("budget") ||
@@ -323,7 +406,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setMessages((current) => [...current, assistantMsg])
       }, 400)
     },
-    [chat, openResource]
+    [chat, openResource, isResourcePrivate]
   )
 
   const handleMiniChatDragStart = React.useCallback(
@@ -375,8 +458,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     () => ({
       collections,
       rootFiles,
+      privateCollections,
+      privateRootFiles,
       resources: DEFAULT_RESOURCES,
       allResources,
+      knowledgeResources,
       openResource,
       deletedResources,
       chat,
@@ -398,13 +484,20 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       importFiles,
       moveResource,
       deleteTarget,
+      renameResource,
+      renameFolder,
       sendMessage,
       handleSaveDraft,
       handleMiniChatDragStart,
+      isResourcePrivate,
     }),
     [
       collections,
+      rootFiles,
+      privateCollections,
+      privateRootFiles,
       allResources,
+      knowledgeResources,
       openResource,
       deletedResources,
       chat,
@@ -421,9 +514,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       importFiles,
       moveResource,
       deleteTarget,
+      renameResource,
+      renameFolder,
       sendMessage,
       handleSaveDraft,
       handleMiniChatDragStart,
+      isResourcePrivate,
     ]
   )
 

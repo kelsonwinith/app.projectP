@@ -30,6 +30,10 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
    - **TOC ScrollSpy:** Dynamic table of contents that tracks reading position in clean single-view documents.
    - **Slide Grid Sorter:** Thumbnail grid overview for rapid slide rearrangement and navigation.
    - **Direct In-Place Editing:** Click any content block directly to edit in place, with floating Confirm/Cancel action controls and real-time collaborator presence badges.
+7. **Private Section & Knowledge Isolation:**
+   - A dedicated "Private" section located directly under Collections in the sidebar for personal files that belong solely to the user.
+   - Resources created in or moved to Private are strictly isolated from the shared knowledge base: excluded from Living Glossary scans and links, omitted from Knowledge Hub orphan gap detection, and exempted from cross-source contradiction checks.
+   - Private files feature a distinct "Personal File" badge and "Private / ..." breadcrumbs in the universal viewer with collaborator presence suppressed.
 
 ---
 
