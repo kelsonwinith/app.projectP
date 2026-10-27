@@ -1,13 +1,13 @@
 # Resource Types and Transclusion Specification
 
-**Document Version**: 1.0.0
+**Document Version**: 1.1.0
 **Status**: Active
 
-This document specifies the six primary resource formats supported by Project P, their user capabilities, concurrency models, and the cross-resource transclusion architecture.
+This document specifies the resource formats supported by Project P, their user capabilities, concurrency models, creation vs ingestion policies, and the cross-resource transclusion architecture.
 
 ---
 
-## 1. Universal Resource Ecosystem (6 Resource Types)
+## 1. Universal Resource Ecosystem (7 Resource Formats)
 
 Project P normalizes incoming file formats into structured intermediate schemas and renders them as semantic, collaborative HTML:
 
@@ -15,13 +15,23 @@ Project P normalizes incoming file formats into structured intermediate schemas 
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      UNIVERSAL RESOURCE ECOSYSTEM                      │
 ├───────────────────┬───────────────────┬────────────────────────────────┤
-│ 1. 📄 DOCUMENT    │ 2. 📊 TABLE/SHEET │ 3. 📽️ PRESENTATION             │
+│ 1. 📄 DOCUMENT    │ 2. 📊 TABLE       │ 3. 📽️ PRESENTATION             │
 │ (Articles, Specs) │ (Data grids)      │ (Slide decks)                  │
 ├───────────────────┼───────────────────┼────────────────────────────────┤
-│ 4. 🕸️ GRAPH/DIAGRAM│ 5. 🖼️ VISUAL/IMAGE│ 6. 💻 CODE/SPEC                │
-│ (Architecture)    │ (Vision & OCR)    │ (Schemas, Contracts)           │
-└───────────────────┴───────────────────┴────────────────────────────────┘
+│ 4. 🕸️ GRAPH/DIAGRAM│ 5. 💻 CODE/SPEC   │ 6. 🖼️ IMAGE                    │
+│ (Architecture)    │ (Schemas, Code)   │ (Vision & OCR)                 │
+├───────────────────┴───────────────────┴────────────────────────────────┤
+│ 7. 🎙️ AUDIO (Recordings, Transcripts, Voice Notes, Meeting Minutes)     │
+└────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 1.0 Resource Creation vs Ingestion Policy
+- **Text-Based Resources (Creatable from scratch):**
+  - Formats: `Document`, `Table`, `Presentation`, `Graph`, and `Code`.
+  - Behavior: Can be instantiated blank from scratch via the **New Resource** context menu action, as each format has a well-defined initial schema and editable text canvas.
+- **Media-Based Resources (Import & Ingestion only):**
+  - Formats: `Image` and `Audio`.
+  - Behavior: Cannot be created as blank files from scratch. They are added to the workspace strictly through the **Import...** menu action (native file explorer) or generated via multimodal AI pipelines.
 
 ### 1.1 Document (`.doc`, `.docx`, `.pdf`, `.md`, `.txt`)
 - **Rendering:** Article reader view with dynamic TOC ScrollSpy.
@@ -31,7 +41,7 @@ Project P normalizes incoming file formats into structured intermediate schemas 
   - Block-level locking during active typing.
   - Inline annotations and transcluded embed containers.
 
-### 1.2 Table / Spreadsheet (`.xlsx`, `.csv`, `.tsv`, `.sheet`)
+### 1.2 Table (`.xlsx`, `.csv`, `.tsv`, `.sheet`)
 - **Rendering:** High-performance interactive HTML data grid.
 - **Capabilities:**
   - **Cell-Level Concurrency:** Locks only specific cell or row coordinates (`row-N:col-M`), enabling multiple collaborators to work in the same sheet simultaneously.
@@ -53,17 +63,25 @@ Project P normalizes incoming file formats into structured intermediate schemas 
   - Interactive pan, zoom, node selection, and cluster grouping.
   - Bi-directional sync: modifying node definitions updates referenced canonical glossary entries.
 
-### 1.5 Visual / Image (`.png`, `.jpg`, `.svg`, Design boards)
+### 1.5 Code / Specification (`.ts`, `.py`, `.sql`, `.json`, OpenAPI)
+- **Rendering:** Monospaced code viewer with syntax highlighting and line numbers.
+- **Capabilities:**
+  - AST parsing and symbol extraction linked directly to the canonical living glossary.
+  - Contract validation and schema drift detection against database migrations.
+
+### 1.6 Image (`.png`, `.jpg`, `.svg`, Design boards)
 - **Rendering:** High-resolution viewer with Vision AI annotation overlays.
 - **Capabilities:**
   - Semantic image tagging and optical character recognition (OCR).
   - Bounding box annotations and region-specific commentary.
 
-### 1.6 Code / Specification (`.ts`, `.py`, `.sql`, `.json`, OpenAPI)
-- **Rendering:** Monospaced code viewer with syntax highlighting and line numbers.
+### 1.7 Audio (`.mp3`, `.wav`, `.m4a`, `.ogg`, `.flac`, `.aac`)
+- **Rendering:** Interactive audio player with dynamic waveform visualizer, scrubber, and synchronized transcript reader.
 - **Capabilities:**
-  - AST parsing and symbol extraction linked directly to the canonical living glossary.
-  - Contract validation and schema drift detection against database migrations.
+  - Synchronized AI Speech-to-Text transcript with speaker labels and jump-to-timestamp navigation.
+  - In-place draft editing of transcript segments with local persistence.
+  - Audio snippet transclusion and timestamp bookmarking in documents.
+  - Single Source of Truth verification between spoken claims and written specs.
 
 ---
 

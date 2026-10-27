@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { PageShell, PageHeader } from "@/components/page-shell"
 
 interface KnowledgeGap {
   id: string
@@ -124,33 +125,31 @@ export default function KnowledgeHubPage() {
   )
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-7">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#17212b] dark:text-[#f1f5f9]">
-              Knowledge Hub
-            </h1>
-            <p className="mt-1 text-sm text-[#637080] dark:text-[#90a0b2]">
-              Global semantic index, single-source-of-truth transclusions, and orphan knowledge detection.
-            </p>
+    <PageShell>
+      {/* Page Header */}
+      <PageHeader
+        tag={
+          <>
+            <span className="size-1.5 rounded-full bg-[#4c9f82]" />
+            Semantic index <span className="text-[#a3adb9]">·</span> Transclusion graph
+          </>
+        }
+        title="Knowledge Hub"
+        description="Global semantic index, single-source-of-truth transclusions, and orphan knowledge detection."
+        actions={
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Search knowledge..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-xs bg-white dark:bg-[#161c24] border-[#e4e8ee] dark:border-[#242e3a]"
+            />
           </div>
+        }
+      />
 
-          <div className="flex items-center gap-2">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search knowledge..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs bg-white dark:bg-[#161c24] border-[#e4e8ee] dark:border-[#242e3a]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 4 Stat Cards */}
+      {/* 4 Stat Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-[#e4e8ee] dark:border-[#242e3a] bg-white dark:bg-[#161c24] shadow-xs">
             <CardContent className="p-4">
@@ -422,7 +421,6 @@ export default function KnowledgeHubPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </PageShell>
   )
 }

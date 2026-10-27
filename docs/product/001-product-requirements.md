@@ -11,7 +11,7 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
 ### 1.2 Core Objectives
 1. **Granular Collaboration & Shared Temp Drafts:**
    - In tabular resources, concurrency locks are applied strictly to targeted cell/row coordinates rather than locking the entire sheet.
-   - When a block or cell is edited and unfocused, the mutation is immediately persisted to a centralized shared temp draft buffer (backed by Redis and PostgreSQL). Changes survive page reloads and are broadcast live to all active collaborators.
+   - When a block or cell is edited and unfocused, the mutation is immediately persisted to a local-first shared temp draft buffer. Changes survive page reloads and are synchronized live across sessions.
    - Authors can revert specific blocks back to their last committed state using a targeted Revert Block action.
 2. **3-Tab Save Modal with Selective Staging:**
    - Opening the save modal provides a 3-tab audit workflow:

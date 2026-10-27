@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { PageShell, PageHeader } from "@/components/page-shell"
 
 interface CanonicalTerm {
   canonical: string
@@ -151,19 +152,18 @@ export default function GlossaryPage() {
   })
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-6xl space-y-7">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#17212b] dark:text-[#f1f5f9]">
-              Living Glossary
-            </h1>
-            <p className="mt-1 text-sm text-[#637080] dark:text-[#90a0b2]">
-              Canonical Term Standardization engine that collapses acronyms and synonyms into single verified knowledge nodes.
-            </p>
-          </div>
-
+    <PageShell>
+      {/* Header */}
+      <PageHeader
+        tag={
+          <>
+            <span className="size-1.5 rounded-full bg-[#4c9f82]" />
+            Ubiquitous language <span className="text-[#a3adb9]">·</span> Term standardization
+          </>
+        }
+        title="Living Glossary"
+        description="Canonical Term Standardization engine that collapses acronyms and synonyms into single verified knowledge nodes."
+        actions={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger
               render={
@@ -267,7 +267,8 @@ export default function GlossaryPage() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+        }
+      />
 
         {/* Filter & Search Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -371,7 +372,6 @@ export default function GlossaryPage() {
             </Card>
           ))}
         </div>
-      </div>
-    </div>
+    </PageShell>
   )
 }

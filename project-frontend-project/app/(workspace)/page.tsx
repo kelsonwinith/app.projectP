@@ -16,6 +16,8 @@ import { useWorkspace } from "@/context/workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { ResourceViewerContainer } from "@/components/resource-viewers/resource-viewer-container"
+import { PageShell, PageHeader } from "@/components/page-shell"
 
 export default function WorkspacePage() {
   const { allResources, deletedResources, openResource, closeResource, openResourceAndChat } =
@@ -25,27 +27,23 @@ export default function WorkspacePage() {
   const currentResource = allResources.find((r) => r.name === openResource)
 
   return (
-    <div className="mx-auto flex max-w-[1440px] flex-col px-5 py-7 sm:px-8 lg:px-10">
+    <PageShell>
       {/* 1. Header greeting (when no resource is opened) */}
       {!hasResource && (
         <>
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-medium text-[#5e8bb7] dark:text-[#93c5fd]">
+          <PageHeader
+            tag={
+              <>
                 <span className="size-1.5 rounded-full bg-[#4c9f82]" />
                 All systems synced <span className="text-[#a3adb9]">·</span> Updated just now
-              </div>
-              <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-[#17212b] dark:text-[#f1f5f9] sm:text-[32px]">
-                Good morning, Sarah.
-              </h1>
-              <p className="mt-1.5 text-[14px] text-[#7a8795] dark:text-[#94a3b8]">
-                Choose a resource or ask Project P about your knowledge workspace.
-              </p>
-            </div>
-          </div>
+              </>
+            }
+            title="Good morning, Sarah."
+            description="Choose a resource or ask Project P about your knowledge workspace."
+          />
 
           {/* Metric Cards */}
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Resources", value: "48", icon: Library },
               { label: "Knowledge coverage", value: "82%", icon: Network },
@@ -72,60 +70,13 @@ export default function WorkspacePage() {
       )}
 
       {/* 2. Focused Resource View (when a resource is opened) */}
-      {hasResource && (
-        <Card className="rounded-xl border border-[#e4e8ee] dark:border-[#242e3a] bg-white dark:bg-[#161c24] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-[#6d8eae] dark:text-[#93c5fd]">
-                <FileText className="size-3.5 text-[#1c5da7] dark:text-[#60a5fa]" />
-                <span>{currentResource?.type ?? "Resource"}</span>
-              </div>
-              <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-[#17212b] dark:text-[#f1f5f9]">
-                {openResource}
-              </h1>
-              <p className="mt-2 text-[13px] text-[#7a8795] dark:text-[#94a3b8]">
-                A focused resource view. Ask the mini chat below to summarize, compare, or update this content.
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={closeResource}
-              aria-label="Close resource"
-              className="size-8 rounded-md text-[#8e9aa7] hover:bg-[#f4f6f8] dark:hover:bg-[#1f2937]"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-[#f7f9fb] dark:bg-[#1f2937]/50 p-4">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-[#9aa5b2] dark:text-[#64748b]">
-                Status
-              </div>
-              <div className="mt-2 text-[13px] font-semibold text-[#3f8065] dark:text-[#4ade80] flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-[#4c9f82]" />
-                Synced (Single Source of Truth)
-              </div>
-            </div>
-            <div className="rounded-lg bg-[#f7f9fb] dark:bg-[#1f2937]/50 p-4">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-[#9aa5b2] dark:text-[#64748b]">
-                Type
-              </div>
-              <div className="mt-2 text-[13px] font-semibold text-[#17212b] dark:text-[#f1f5f9]">
-                {currentResource?.type}
-              </div>
-            </div>
-            <div className="rounded-lg bg-[#f7f9fb] dark:bg-[#1f2937]/50 p-4">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-[#9aa5b2] dark:text-[#64748b]">
-                Source
-              </div>
-              <div className="mt-2 text-[13px] font-semibold text-[#17212b] dark:text-[#f1f5f9]">
-                Product docs
-              </div>
-            </div>
-          </div>
-        </Card>
+      {hasResource && openResource && (
+        <div className="h-[calc(100vh-140px)] min-h-[600px] rounded-xl border border-[#e4e8ee] dark:border-[#242e3a] overflow-hidden bg-card shadow-xs">
+          <ResourceViewerContainer
+            resourceName={openResource}
+            onClose={closeResource}
+          />
+        </div>
       )}
 
       {/* 3. Resources Grid Section */}
@@ -226,6 +177,6 @@ export default function WorkspacePage() {
           </Card>
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

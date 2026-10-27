@@ -12,27 +12,25 @@ This document specifies the primary user journeys, sequence interactions, and wo
 ```mermaid
 sequenceDiagram
     autonumber
-    actor UserA as Editor (User A)
-    actor UserB as Collaborator (User B)
-    participant UI_A as Client App (User A)
-    participant UI_B as Client App (User B)
-    participant WS as WebSocket Hub
-    participant DB as Shared Temp Store (Redis/PostgreSQL)
+    actor UserA as Editor
+    participant UI_A as Editor UI
+    participant Store as Local-First Draft Store
+    participant Bus as Session Broadcast Bus
 
     UserA->>UI_A: Edits block <p id="p-002">
     UserA->>UI_A: Unfocuses block (click outside or tab away)
     
-    UI_A->>WS: release_and_reveal_block(res_id, "p-002", new_html)
-    WS->>DB: Upsert into resource_temp_drafts
-    WS-->>UI_B: Broadcast block_updated_temp(res_id, "p-002")
+    UI_A->>Store: saveTempBlock(res_id, "p-002", new_html)
+    Store-->>UI_A: Persisted to client storage
+    UI_A->>Bus: Broadcast block_updated_temp(res_id, "p-002")
     
-    Note over UI_A,UI_B: Even if User A or User B refreshes the browser,<br/>the temp draft state persists and is re-rendered!
+    Note over UI_A,Store: Even if user refreshes the browser,<br/>the temp draft state persists and is re-rendered!
 
     opt Reverting specific block
         UserA->>UI_A: Clicks "Revert Block" on "p-002"
-        UI_A->>WS: revert_temp_block(res_id, "p-002")
-        WS->>DB: Delete from resource_temp_drafts
-        WS-->>UI_B: Broadcast block_reverted(res_id, "p-002")
+        UI_A->>Store: revertTempBlock(res_id, "p-002")
+        Store-->>UI_A: Deleted from temp drafts
+        UI_A->>Bus: Broadcast block_reverted(res_id, "p-002")
     end
 ```
 
@@ -45,13 +43,14 @@ sequenceDiagram
     autonumber
     actor User as Workspace Author
     participant UI as 3-Tab Save Modal
-    participant API as FastAPI Gateway
-    participant Worker as Background Sync Worker
-    participant DB as PostgreSQL Core DB
+    participant Store as Local-First Resource Store
+    participant Engine as Conflict & Index Engine
 
     User->>UI: Clicks "Save Resource"
-    UI->>API: GET /api/v1/projects/{id}/resources/{res_id}/save-modal-data
-    API-->>UI: Returns 3 tabs: Original, Temp Diff (+words/-words), Conflict Detection Report
+    UI->>Store: getSaveModalData(res_id)
+    Store->>Engine: Run contradiction check against workspace resources
+    Engine-->>Store: Detected conflicts report
+    Store-->>UI: Returns 3 tabs: Original, Temp Diff (+words/-words), Conflict Report
     
     UI->>User: Renders 3-Tab Save Modal
     Note over UI,User: Tab 1: Full original text<br/>Tab 2: Diff view with per-block checkboxes<br/>Tab 3: Commit notes and cross-source conflict report
@@ -59,13 +58,12 @@ sequenceDiagram
     User->>UI: Selects [✓] Blocks 1 & 2 (leaves Block 3 unchecked)
     User->>UI: Enters commit message: "Update phase 1 dosage metrics" and clicks Commit
     
-    UI->>API: PUT /api/v1/.../save-selective (selected_anchor_ids: ["p-1", "p-2"])
-    API->>DB: Commit selected blocks to resource_versions; delete selected from resource_temp_drafts
-    Note over DB: Block 3 remains in resource_temp_drafts as pending temp edit
+    UI->>Store: commitSelective(selected_anchor_ids: ["p-1", "p-2"])
+    Store->>Store: Commit selected blocks to resource; delete selected from temp drafts
+    Note over Store: Block 3 remains in temp drafts as pending edit
     
-    API->>Worker: Enqueue Incremental Delta Sync (only for committed blocks)
-    Worker->>DB: Update pgvector chunks & living knowledge nodes
-    API-->>UI: Commit success response
+    Store->>Engine: Sync knowledge index (only for committed blocks)
+    UI-->>User: Commit success confirmation
 ```
 
 ---

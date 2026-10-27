@@ -14,7 +14,7 @@ export default function WorkspaceLayout({
       <WorkspaceSidebar />
       <section className="min-w-0 flex-1 flex flex-col h-screen max-h-screen overflow-hidden">
         <WorkspaceHeader />
-        <main className="flex-1 min-h-0 overflow-y-auto pb-28">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           {children}
         </main>
       </section>

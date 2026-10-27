@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter, usePathname } from "next/navigation"
 import {
   Collection,
   DEFAULT_RESOURCES,
@@ -11,8 +12,16 @@ import {
 import {
   useCollectionStore,
   findFolder,
+  findResourcePath,
   getNextSiblingResourceName,
 } from "@/lib/collection-store"
+import { useDraftStore } from "@/lib/draft-store"
+import {
+  readTextFromFile,
+  determineResourceType,
+  cleanBaseName,
+  formatTextToPrettierBlocks,
+} from "@/lib/resource-importer"
 
 interface WorkspaceContextType {
   collections: Collection[]
@@ -39,6 +48,7 @@ interface WorkspaceContextType {
   toggleCollection: (name: string) => void
   addFolder: (parentName?: string) => string
   createResource: (type: string, targetCollection?: string) => void
+  importFiles: (files: FileList | File[], targetCollection?: string) => Promise<void>
   moveResource: (resourceName: string, targetCollection: string) => void
   deleteTarget: (target: string, kind: "collection" | "resource") => void
   sendMessage: (customText?: string) => void
@@ -69,6 +79,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const moveResource = useCollectionStore((state) => state.moveResource)
   const deleteTargetFromStore = useCollectionStore((state) => state.deleteTarget)
 
+  const router = useRouter()
+  const pathname = usePathname()
+
   const [createdResources, setCreatedResources] = React.useState<Resource[]>([])
   const [deletedResources, setDeletedResources] = React.useState<string[]>([])
   const [openResource, setOpenResource] = React.useState<string | null>(null)
@@ -87,15 +100,26 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return [...DEFAULT_RESOURCES, ...createdResources]
   }, [createdResources])
 
-  const openResourceAndChat = React.useCallback((name: string) => {
-    setOpenResource(name)
-    setChatMode("full")
-  }, [])
+  const openResourceAndChat = React.useCallback(
+    (name: string) => {
+      setOpenResource(name)
+      setChatMode("full")
+      const path = findResourcePath(name, collections, rootFiles)
+      const targetUrl = `/resources/${path.map(encodeURIComponent).join("/")}`
+      if (pathname !== targetUrl) {
+        router.push(targetUrl)
+      }
+    },
+    [collections, rootFiles, pathname, router]
+  )
 
   const closeResource = React.useCallback(() => {
     setOpenResource(null)
     setChatMode("full")
-  }, [])
+    if (pathname && pathname.startsWith("/resources")) {
+      router.push("/")
+    }
+  }, [pathname, router])
 
   const createResource = React.useCallback(
     (type: string, targetCollection?: string) => {
@@ -125,6 +149,82 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       openResourceAndChat(name)
     },
     [collections, rootFiles, openResourceAndChat, addResourceToCollection]
+  )
+
+  const importFiles = React.useCallback(
+    async (files: FileList | File[], targetCollection?: string) => {
+      const fileList = Array.from(files)
+      if (fileList.length === 0) return
+
+      let effectiveTarget = targetCollection || "root"
+      let firstResourceName: string | null = null
+
+      for (const file of fileList) {
+        let folderForFile = effectiveTarget
+        if (file.webkitRelativePath) {
+          const parts = file.webkitRelativePath.split("/")
+          if (parts.length > 1) {
+            const folderName = parts[0]
+            const existingFolder = findFolder(collections, folderName)
+            if (existingFolder) {
+              folderForFile = existingFolder.id || existingFolder.name
+            } else {
+              folderForFile = addFolder(
+                effectiveTarget !== "root" ? effectiveTarget : undefined,
+                folderName
+              )
+            }
+          }
+        }
+
+        // 1. Read and extract raw text
+        const rawText = await readTextFromFile(file)
+        const resourceType = determineResourceType(file.name)
+        const baseName = cleanBaseName(file.name)
+
+        // 2. Check siblings in destination
+        let siblingFiles: string[] = rootFiles
+        if (folderForFile && folderForFile !== "root") {
+          const folder = findFolder(collections, folderForFile)
+          if (folder) {
+            siblingFiles = folder.children
+          }
+        }
+
+        const name = getNextSiblingResourceName(baseName, siblingFiles)
+
+        // 3. Prettier re-layout and formatting
+        if (resourceType === "Document") {
+          const prettierBlocks = formatTextToPrettierBlocks(rawText, file.name)
+          useDraftStore.getState().saveImportedDocument(name, prettierBlocks)
+        } else {
+          useDraftStore.getState().saveTempBlock(name, "code-content", "", rawText)
+        }
+
+        // 4. Create resource metadata
+        const template =
+          DEFAULT_RESOURCES.find((item) => item.type === resourceType) ?? DEFAULT_RESOURCES[0]
+
+        const resource: Resource = {
+          ...template,
+          name,
+          type: resourceType,
+          detail: `${resourceType} · imported from ${file.name}`,
+        }
+
+        setCreatedResources((current) => [...current.filter((r) => r.name !== name), resource])
+        addResourceToCollection(folderForFile, name)
+
+        if (!firstResourceName) {
+          firstResourceName = name
+        }
+      }
+
+      if (firstResourceName) {
+        openResourceAndChat(firstResourceName)
+      }
+    },
+    [collections, rootFiles, addFolder, addResourceToCollection, openResourceAndChat]
   )
 
   const deleteTarget = React.useCallback(
@@ -295,6 +395,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       toggleCollection,
       addFolder,
       createResource,
+      importFiles,
       moveResource,
       deleteTarget,
       sendMessage,
@@ -317,6 +418,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       toggleCollection,
       addFolder,
       createResource,
+      importFiles,
       moveResource,
       deleteTarget,
       sendMessage,

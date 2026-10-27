@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { PageShell, PageHeader } from "@/components/page-shell"
 
 export default function SettingsPage() {
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -52,19 +53,18 @@ export default function SettingsPage() {
   const isDarkMode = mounted && resolvedTheme === "dark"
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-4xl space-y-8">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#17212b] dark:text-[#f1f5f9]">
-              Workspace Settings
-            </h1>
-            <p className="mt-1 text-sm text-[#637080] dark:text-[#90a0b2]">
-              Manage appearance, AI fact-checking rules, collaborative temp drafts, and team permissions.
-            </p>
-          </div>
-
+    <PageShell>
+      {/* Page Header */}
+      <PageHeader
+        tag={
+          <>
+            <span className="size-1.5 rounded-full bg-[#4c9f82]" />
+            Configuration & rules <span className="text-[#a3adb9]">·</span> System preferences
+          </>
+        }
+        title="Workspace Settings"
+        description="Manage appearance, AI fact-checking rules, collaborative temp drafts, and team permissions."
+        actions={
           <Button
             onClick={handleSave}
             className="flex items-center gap-2 bg-[#1c5da7] hover:bg-[#164b87] text-white shadow-sm"
@@ -81,9 +81,10 @@ export default function SettingsPage() {
               </>
             )}
           </Button>
-        </div>
+        }
+      />
 
-        {/* 1. Appearance & Theme Settings */}
+      {/* 1. Appearance & Theme Settings */}
         <Card className="border-[#e4e8ee] dark:border-[#242e3a] bg-white dark:bg-[#161c24] shadow-xs">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2.5">
@@ -407,7 +408,6 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+    </PageShell>
   )
 }

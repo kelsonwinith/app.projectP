@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PageShell, PageHeader } from "@/components/page-shell"
 
 type ActivityType = "commit" | "conflict" | "lock" | "transclusion"
 
@@ -123,21 +124,20 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-5xl space-y-7">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#17212b] dark:text-[#f1f5f9]">
-              Workspace Activity & Audit Feed
-            </h1>
-            <p className="mt-1 text-sm text-[#637080] dark:text-[#90a0b2]">
-              Track selective commits, fact-checking conflict resolutions, cell locking, and live transclusion syncs.
-            </p>
-          </div>
-        </div>
+    <PageShell>
+      {/* Header */}
+      <PageHeader
+        tag={
+          <>
+            <span className="size-1.5 rounded-full bg-[#4c9f82]" />
+            Live audit log <span className="text-[#a3adb9]">·</span> Real-time workspace events
+          </>
+        }
+        title="Workspace Activity & Audit Feed"
+        description="Track selective commits, fact-checking conflict resolutions, cell locking, and live transclusion syncs."
+      />
 
-        {/* 3 Summary Stats */}
+      {/* 3 Summary Stats */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card className="border-[#e4e8ee] dark:border-[#242e3a] bg-white dark:bg-[#161c24] shadow-xs">
             <CardContent className="p-4">
@@ -290,7 +290,6 @@ export default function ActivityPage() {
             </Card>
           ))}
         </div>
-      </div>
-    </div>
+    </PageShell>
   )
 }

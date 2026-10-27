@@ -1,4 +1,5 @@
 import {
+  AudioLines,
   BookOpen, Code2, FileText, Folder, FolderPlus,
   ImageIcon, LayoutGrid, Library, MessageSquareText,
   Network, Presentation, Settings2, Sparkles, Table2, Users, Zap,
@@ -15,7 +16,7 @@ export type Collection = {
 
 export type Resource = {
   name: string
-  type: 'Graph' | 'Document' | 'Table' | 'Presentation' | 'Image' | 'Code' | string
+  type: 'Graph' | 'Document' | 'Table' | 'Presentation' | 'Image' | 'Code' | 'Audio' | string
   icon: any
   color: string
   detail: string
@@ -46,7 +47,24 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Activity', href: '/activity', icon: Zap },
 ]
 
-export const DEFAULT_COLLECTIONS: Collection[] = []
+export const DEFAULT_COLLECTIONS: Collection[] = [
+  {
+    id: "folder_example",
+    name: "Example",
+    count: 7,
+    open: true,
+    children: [
+      "API Specification v2",
+      "Clinical Trial Metrics",
+      "Product Roadmap",
+      "System Architecture",
+      "Brand direction",
+      "Executive Review Recording",
+      "Database schema",
+    ],
+    folders: [],
+  },
+]
 
 export const DEFAULT_RESOURCES: Resource[] = [
   {
@@ -85,6 +103,13 @@ export const DEFAULT_RESOURCES: Resource[] = [
     detail: 'Image board · updated yesterday',
   },
   {
+    name: 'Executive Review Recording',
+    type: 'Audio',
+    icon: AudioLines,
+    color: 'bg-fuchsia-50 text-fuchsia-600 dark:bg-fuchsia-950/40 dark:text-fuchsia-400',
+    detail: 'Audio recording · synced 1 hour ago',
+  },
+  {
     name: 'Database schema',
     type: 'Code',
     icon: Code2,
@@ -96,7 +121,7 @@ export const DEFAULT_RESOURCES: Resource[] = [
 export const INITIAL_CHAT_MESSAGES: ChatMessageItem[] = [
   {
     role: 'assistant',
-    text: 'Hello Sarah! I am Project P Assistant. I can help synthesize workspace knowledge, run cross-source fact checking, or draft new resources from our conversation.',
+    text: 'Hello! I am Project P Assistant. I can help synthesize workspace knowledge, run cross-source fact checking, or draft new resources from our conversation.',
     faithfulnessScore: 99,
   },
   {
@@ -105,10 +130,10 @@ export const INITIAL_CHAT_MESSAGES: ChatMessageItem[] = [
   },
   {
     role: 'assistant',
-    text: 'Based on API Specification v2 and System Architecture:\n• The backend operates on FastAPI and PostgreSQL 16 with pgvector for vector retrieval.\n• Redis handles shared temp drafts with sub-15ms WebSocket roundtrips.\n• All resources maintain single-source-of-truth transclusion pointers.',
+    text: 'Based on API Specification v2 and System Architecture:\n• The workspace operates on Next.js 16 with a high-performance local-first state engine.\n• Client storage handles shared temp drafts with sub-millisecond local persist roundtrips.\n• All resources maintain single-source-of-truth transclusion pointers.',
     citations: [
-      { name: 'API Specification v2', quote: 'FastAPI gateway and schema spec' },
-      { name: 'System Architecture', quote: 'Redis cache layer & WebSocket hub' },
+      { name: 'API Specification v2', quote: 'Local-first controller and schema contracts' },
+      { name: 'System Architecture', quote: 'Zustand storage layer & broadcast channel' },
     ],
     faithfulnessScore: 98,
   },

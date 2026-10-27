@@ -7,7 +7,7 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
 | Term | Meaning | Avoid |
 | :--- | :--- | :--- |
 | Resource | A structured standard content entity representing a document, table, presentation, graph, image, or code within a workspace. | File, raw blob, static asset |
-| Shared Temp Draft | A centralized collaborative draft buffer synchronized in real time via Redis and PostgreSQL so peers see uncommitted mutations across page refreshes. | Ephemeral draft, local scratchpad, unsaved state |
+| Shared Temp Draft | A local-first collaborative draft buffer persisted in client storage and synchronized across browser sessions so users see uncommitted mutations across page refreshes. | Ephemeral draft, local scratchpad, unsaved state |
 | Selective Staging | The commit mechanism within the 3-tab save modal enabling authors to stage and commit specific blocks permanently while leaving other blocks in temporary state. | Partial commit, cherry-picking, batch save |
 | Transclusion | The mechanism of embedding a content block or range from a canonical source resource into a destination document by reference without content duplication. | Live embed, copied block, dynamic clone |
 | Canonical Term | The authoritative standardized naming and definition for a concept in the living glossary, under which all synonyms and acronyms are collapsed. | Preferred term, primary keyword, alias |

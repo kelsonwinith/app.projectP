@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import { Collection } from "./workspace-types"
+import { Collection, DEFAULT_COLLECTIONS } from "./workspace-types"
 
 function generateFolderId(): string {
   return `f_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
@@ -23,6 +23,35 @@ export function findFolder(items: Collection[], target: string): Collection | nu
     }
   }
   return null
+}
+
+export function findResourcePath(
+  targetResource: string,
+  collections: Collection[],
+  rootFiles: string[] = []
+): string[] {
+  if (rootFiles.includes(targetResource)) {
+    return [targetResource]
+  }
+
+  function search(items: Collection[], currentPath: string[]): string[] | null {
+    for (const item of items) {
+      const nextPath = [...currentPath, item.name]
+      if (item.children.includes(targetResource)) {
+        return [...nextPath, targetResource]
+      }
+      if (item.folders && item.folders.length > 0) {
+        const found = search(item.folders, nextPath)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const foundInTree = search(collections, [])
+  if (foundInTree) return foundInTree
+
+  return [targetResource]
 }
 
 function updateCollectionTree(
@@ -139,7 +168,7 @@ interface CollectionStore {
 export const useCollectionStore = create<CollectionStore>()(
   persist(
     (set, get) => ({
-      collections: [], // Starts empty until created by user
+      collections: DEFAULT_COLLECTIONS, // Starts with Example folder containing all resource mockups
       rootFiles: [], // Loose resources directly at root level
       hasHydrated: false,
       setHasHydrated: (state: boolean) => set({ hasHydrated: state }),
@@ -260,10 +289,14 @@ export const useCollectionStore = create<CollectionStore>()(
       name: "project-p-collections",
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
-        if (state?.collections) {
-          state.setCollections(ensureFolderIds(state.collections))
+        if (state) {
+          if (!state.collections || state.collections.length === 0) {
+            state.setCollections(ensureFolderIds(DEFAULT_COLLECTIONS))
+          } else {
+            state.setCollections(ensureFolderIds(state.collections))
+          }
+          state.setHasHydrated(true)
         }
-        state?.setHasHydrated(true)
       },
     }
   )

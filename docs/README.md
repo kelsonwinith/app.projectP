@@ -17,9 +17,9 @@ The authoritative ubiquitous language glossary is the single source of truth for
 | `product/` | [001-product-requirements.md](product/001-product-requirements.md) | Product vision, core objectives, and 3-tab save requirements |
 | `product/` | [002-user-journeys-and-flows.md](product/002-user-journeys-and-flows.md) | Sequence diagrams and collaboration workflow state machines |
 | `product/` | [003-resource-types-and-transclusion.md](product/003-resource-types-and-transclusion.md) | Universal resource formats and cross-resource transclusions |
-| `architecture/` | [001-system-architecture.md](architecture/001-system-architecture.md) | Tiered system architecture, Redis scratchpad, and locking |
-| `architecture/` | [002-data-schema.md](architecture/002-data-schema.md) | PostgreSQL 16 DDL, pgvector indexes, and ERD |
-| `architecture/` | [003-api-contracts.md](architecture/003-api-contracts.md) | RESTful endpoints and real-time WebSocket contracts |
+| `architecture/` | [001-system-architecture.md](architecture/001-system-architecture.md) | Local-first system architecture, temp draft engine, and concurrency |
+| `architecture/` | [002-data-schema.md](architecture/002-data-schema.md) | Local-first data models, storage schemas, and ERD |
+| `architecture/` | [003-api-contracts.md](architecture/003-api-contracts.md) | Client store interfaces, save controller, and multi-tab sync |
 | `decisions/` | [001-decisions.md](decisions/001-decisions.md) | Architecture Decision Records (ADR log) |
 | `development/` | [001-implementation-roadmap.md](development/001-implementation-roadmap.md) | Phased engineering milestones and quality gates |
 

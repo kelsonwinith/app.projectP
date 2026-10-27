@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  AudioLines,
   ChevronDown,
   ChevronRight,
   Code2,
@@ -17,6 +18,7 @@ import {
   Settings2,
   Table2,
   Trash2,
+  Upload,
 } from "lucide-react"
 import {
   DndContext,
@@ -37,7 +39,6 @@ import {
   ContextMenuContent,
   ContextMenuGroup,
   ContextMenuItem,
-  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubContent,
@@ -45,23 +46,33 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 
-const RESOURCE_TYPES = [
-  { type: "Code", label: "Code / Spec", icon: Code2, color: "text-cyan-500" },
+// Only text-based structured resources can be created blank from scratch
+const CREATABLE_RESOURCE_TYPES = [
+  { type: "Code", label: "Code", icon: Code2, color: "text-cyan-500" },
   { type: "Document", label: "Document", icon: FileText, color: "text-blue-500" },
-  { type: "Graph", label: "Graph / Diagram", icon: Network, color: "text-violet-500" },
-  { type: "Image", label: "Image / Visual", icon: ImageIcon, color: "text-rose-500" },
+  { type: "Graph", label: "Graph", icon: Network, color: "text-violet-500" },
   { type: "Presentation", label: "Presentation", icon: Presentation, color: "text-amber-500" },
-  { type: "Table", label: "Table / Sheet", icon: Table2, color: "text-emerald-500" },
+  { type: "Table", label: "Table", icon: Table2, color: "text-emerald-500" },
+]
+
+// All resources supported across the workspace (including imported binary media like Image and Audio)
+const ALL_SUPPORTED_RESOURCES = [
+  ...CREATABLE_RESOURCE_TYPES,
+  { type: "Audio", label: "Audio", icon: AudioLines, color: "text-fuchsia-500" },
+  { type: "Image", label: "Image", icon: ImageIcon, color: "text-rose-500" },
 ]
 
 function getResourceMeta(name: string, allResources?: Array<{ name: string; type: string }>) {
   const found = allResources?.find((r) => r.name.toLowerCase() === name.toLowerCase())
   if (found) {
-    const matched = RESOURCE_TYPES.find((t) => t.type.toLowerCase() === found.type.toLowerCase())
+    const matched = ALL_SUPPORTED_RESOURCES.find((t) => t.type.toLowerCase() === found.type.toLowerCase())
     if (matched) return { icon: matched.icon, color: matched.color }
   }
 
   const lower = name.toLowerCase()
+  if (lower.includes("audio") || lower.includes("recording") || lower.includes("podcast") || lower.includes("voice") || lower.endsWith(".mp3") || lower.endsWith(".wav") || lower.endsWith(".m4a") || lower.endsWith(".ogg") || lower.endsWith(".flac")) {
+    return { icon: AudioLines, color: "text-fuchsia-500" }
+  }
   if (lower.includes("table") || lower.includes("metric") || lower.includes("sheet") || lower.endsWith(".csv") || lower.endsWith(".xlsx")) {
     return { icon: Table2, color: "text-emerald-500" }
   }
@@ -125,15 +136,7 @@ function DraggableFileItem({
       </ContextMenuTrigger>
 
       {/* Right-click Context Menu for File */}
-      <ContextMenuContent className="w-44 text-xs">
-        <ContextMenuLabel className="text-[10px] uppercase font-mono tracking-wider truncate">
-          {name}
-        </ContextMenuLabel>
-        <ContextMenuItem onClick={() => openResourceAndChat(name)}>
-          <Icon className={`size-3.5 mr-2 ${color}`} />
-          <span>Open Resource</span>
-        </ContextMenuItem>
-        <ContextMenuSeparator />
+      <ContextMenuContent className="w-36 text-xs">
         <ContextMenuItem
           onClick={() => deleteTarget(name, "resource")}
           variant="destructive"
@@ -150,9 +153,11 @@ function DraggableFileItem({
 function DroppableFolderItem({
   collection,
   level = 0,
+  onTriggerImport,
 }: {
   collection: Collection
   level?: number
+  onTriggerImport?: (target: string) => void
 }) {
   const { toggleCollection, addFolder, deleteTarget, createResource } = useWorkspace()
   const folderId = collection.id || collection.name
@@ -201,9 +206,6 @@ function DroppableFolderItem({
 
         {/* Right-click Context Menu for Folder */}
         <ContextMenuContent className="w-48 text-xs">
-          <ContextMenuLabel className="text-[10px] uppercase font-mono tracking-wider truncate">
-            {collection.name}
-          </ContextMenuLabel>
           <ContextMenuGroup>
             <ContextMenuItem onClick={() => addFolder(folderId)}>
               <FolderPlus className="size-3.5 mr-2" />
@@ -217,7 +219,7 @@ function DroppableFolderItem({
                 <span>New Resource</span>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-44 text-xs">
-                {RESOURCE_TYPES.map((res) => {
+                {CREATABLE_RESOURCE_TYPES.map((res) => {
                   const Icon = res.icon
                   return (
                     <ContextMenuItem
@@ -232,6 +234,15 @@ function DroppableFolderItem({
               </ContextMenuSubContent>
             </ContextMenuSub>
           </ContextMenuGroup>
+
+          <ContextMenuSeparator />
+
+          {/* Direct Import Button to Open Finder / File Explorer */}
+          <ContextMenuItem onClick={() => onTriggerImport?.(folderId)}>
+            <Upload className="size-3.5 mr-2" />
+            <span>Import...</span>
+          </ContextMenuItem>
+
           <ContextMenuSeparator />
           <ContextMenuItem
             onClick={() => deleteTarget(folderId, "collection")}
@@ -251,6 +262,7 @@ function DroppableFolderItem({
               key={folder.id || folder.name}
               collection={folder}
               level={level + 1}
+              onTriggerImport={onTriggerImport}
             />
           ))}
           {files.map((fileName) => (
@@ -286,7 +298,24 @@ function RootDroppableContainer({ children }: { children: React.ReactNode }) {
 
 export function WorkspaceSidebar() {
   const pathname = usePathname()
-  const { collections, rootFiles, addFolder, createResource, moveResource } = useWorkspace()
+  const { collections, rootFiles, addFolder, createResource, moveResource, importFiles } =
+    useWorkspace()
+
+  // File input ref for import functionality (Finder / File Explorer)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [importTarget, setImportTarget] = React.useState<string>("root")
+
+  const triggerImport = (target: string = "root") => {
+    setImportTarget(target)
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      importFiles(e.target.files, importTarget)
+      e.target.value = "" // Reset so same file can be imported again if needed
+    }
+  }
 
   // Configure pointer sensor for dnd-kit with slight activation threshold to avoid intercepting clicks
   const sensors = useSensors(
@@ -376,7 +405,11 @@ export function WorkspaceSidebar() {
                     <div className="flex flex-col gap-0.5 min-h-[140px]">
                       {/* Folders */}
                       {collections.map((col) => (
-                        <DroppableFolderItem key={col.name} collection={col} />
+                        <DroppableFolderItem
+                          key={col.id || col.name}
+                          collection={col}
+                          onTriggerImport={triggerImport}
+                        />
                       ))}
 
                       {/* Root-Level Resources */}
@@ -416,7 +449,7 @@ export function WorkspaceSidebar() {
                 <span>New Resource</span>
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-44 text-xs">
-                {RESOURCE_TYPES.map((res) => {
+                {CREATABLE_RESOURCE_TYPES.map((res) => {
                   const Icon = res.icon
                   return (
                     <ContextMenuItem
@@ -430,9 +463,26 @@ export function WorkspaceSidebar() {
                 })}
               </ContextMenuSubContent>
             </ContextMenuSub>
+
+            <ContextMenuSeparator />
+
+            {/* Direct Import Button to Open Finder / File Explorer */}
+            <ContextMenuItem onClick={() => triggerImport("root")}>
+              <Upload className="size-3.5 mr-2" />
+              <span>Import...</span>
+            </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
       </div>
+
+      {/* Hidden File Input for Import (allows single or multiple file selection in Finder / File Explorer) */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
 
       {/* Footer Profile & Settings Link (Pinned to bottom, never scrolls) */}
       <div className="border-t border-[#edf0f3] dark:border-[#242e3a] p-3 shrink-0">
