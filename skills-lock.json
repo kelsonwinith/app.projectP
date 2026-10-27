@@ -19,6 +19,12 @@
       "skillPath": ".agents/skills/next-best-practices/SKILL.md",
       "computedHash": "db85045827ebeb83ac8dbc992b69188755eeb74dcf01cbf5e694d58aa494a106"
     },
+    "project-documentation": {
+      "source": "kelsonwinith/tool.agent_skills",
+      "sourceType": "github",
+      "skillPath": "skills/project-documentation/SKILL.md",
+      "computedHash": "85b85bfd11772656d6ffade2b21c05041fd5777af04f23fd897791eec7ca112f"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
