@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button"
 import {
   FileText,
   RotateCcw,
-  Sparkles,
   Link2,
 } from "lucide-react"
 
@@ -137,16 +136,6 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
               )
             })}
           </nav>
-
-          <div className="mt-auto pt-4 border-t border-border">
-            <div className="p-2.5 rounded-lg border border-primary/20 bg-primary/5 text-[11px] text-muted-foreground leading-relaxed">
-              <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
-                <Sparkles className="size-3 text-primary" />
-                Local-First Grounding
-              </div>
-              Edits are auto-saved to temporary drafts. Click &apos;Save Resource&apos; in header to audit and commit.
-            </div>
-          </div>
         </aside>
       )}
 

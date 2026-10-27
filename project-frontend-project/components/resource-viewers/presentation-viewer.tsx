@@ -24,7 +24,6 @@ import {
   LayoutGrid,
   FileText,
   RotateCcw,
-  Sparkles,
   Presentation,
 } from "lucide-react"
 
@@ -257,12 +256,6 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
               </div>
             )}
 
-            {/* Slide Footer */}
-            <div className="pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Project P Collaborative Architecture</span>
-              <span className="font-mono text-[10px]">Confidential & Proprietary</span>
-            </div>
-
             {/* Floating bottom action group when editing */}
             {isEditing && (
               <div className="absolute -bottom-3.5 right-6 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
@@ -336,10 +329,6 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
               <div className="p-3.5 rounded-lg bg-muted/40 border border-border text-xs leading-relaxed text-foreground/90 font-serif">
                 &ldquo;{currentSlide.speakerNotes}&rdquo;
               </div>
-            </div>
-
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">Pro-tip:</span> Use Left/Right arrow keys or spacebar to present.
             </div>
           </aside>
         )}

@@ -17,7 +17,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Sparkles,
   Layers,
 } from "lucide-react"
 
@@ -325,16 +324,6 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
                 </Button>
               </div>
             )}
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <div className="p-2.5 rounded-lg border border-primary/20 bg-primary/5 text-[11px] text-muted-foreground leading-relaxed">
-            <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
-              <Sparkles className="size-3 text-primary" />
-              Graph SSoT
-            </div>
-            Node roles are linked to canonical glossary terms. Edits create temporary drafts.
           </div>
         </div>
       </aside>

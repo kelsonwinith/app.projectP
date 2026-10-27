@@ -16,7 +16,6 @@ import {
   Copy,
   Check,
   RotateCcw,
-  Sparkles,
   ListTree,
 } from "lucide-react"
 
@@ -235,14 +234,6 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
-          <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
-            <Sparkles className="size-3 text-primary" />
-            Code Grounding
-          </div>
-          All symbol definitions are cross-referenced with architectural contracts in the ubiquitous language glossary.
         </div>
       </aside>
     </div>

@@ -16,7 +16,6 @@ import {
   MapPin,
   Plus,
   RotateCcw,
-  Sparkles,
   Tag,
 } from "lucide-react"
 
@@ -359,14 +358,6 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
               Click a pin on the image to view specifications
             </div>
           )}
-        </div>
-
-        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
-          <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
-            <Sparkles className="size-3 text-primary" />
-            Computer Vision Grounding
-          </div>
-          Pins are saved with relative percentage coordinates, guaranteeing pixel-perfect alignment across all responsive screen sizes.
         </div>
       </aside>
     </div>
