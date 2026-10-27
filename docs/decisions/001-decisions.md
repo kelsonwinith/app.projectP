@@ -139,3 +139,25 @@ We standardized the file explorer interaction and naming architecture:
 ## Consequences
 - **Positive**: Clean, intuitive file explorer nomenclature; predictable and reusable file/folder sequence numbering; elimination of button clutter; consistent multi-format visual type indicators.
 - **Negative / Trade-offs**: Client-side name scanning incurs `O(N)` set lookups on item creation, which remains negligible for workspace scale (<10,000 files).
+
+---
+
+# ADR-008: Direct In-Place Block Editing with Floating Action Toolbars and Removal of Redundant Sub-Controls
+
+## Status
+Accepted
+
+## Context
+Earlier resource viewers featured modal edit modes, pre-editing "Edit" toolbar buttons, split WYSIWYG/Markdown view toggles, and static sidebar footer callouts ("Local-First Grounding", "Computer Vision Grounding", etc.). Inline "Save Draft" buttons inside content cards created layout shifts and cognitive confusion with the authoritative header "Save Changes" action.
+
+## Decision
+We simplified the universal viewer interaction model across all 7 resource formats:
+1. **Direct Click-to-Edit**: Eliminated pre-editing "Edit" buttons; users click any content block, slide card, table cell, code section, or transcript item directly to enter edit mode.
+2. **Floating Action Controls**: Replaced inline "Save Draft" buttons with a standardized floating `Cancel` and `Confirm` action group toolbar positioned along the bottom edge of the active block (`absolute -bottom-3.5 right-4 z-30`), preventing internal layout shifts.
+3. **Corner Presence Avatar**: Positioned active collaborator avatars centered on the top-right corner edge (`top-0 left-full -translate-y-1/2 -translate-x-3`) with the `Editing...` status text streaming strictly to the right.
+4. **Single-View Document Mode**: Removed the "WYSIWYG", "Markdown", and "Split" view buttons, retaining a single unified article reader with dynamic outline ScrollSpy.
+5. **Removal of Extraneous Footers**: Completely eliminated decorative footer callout boxes ("Local-First Grounding", "Computer Vision Grounding", "Code Grounding", "Graph SSoT", and "Pro-tip") across all viewer sidebars to keep panels focused on core workflows.
+
+## Consequences
+- **Positive**: Zero layout shift during in-place editing; instant click-to-edit responsiveness; complete disambiguation between block confirmation and top-level SSoT commit; maximized vertical screen real estate in sidebars.
+- **Negative / Trade-offs**: Users who preferred raw markdown code editing in documents now interact with formatted semantic blocks rather than a raw syntax editor.

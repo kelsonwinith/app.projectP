@@ -26,10 +26,10 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
    - Living glossary automatically identifies and collapses synonyms, spelling variations, and acronyms (e.g., `Kubernetes`, `K8s`, `k8s`) into a single canonical term, preventing duplicate nodes in the knowledge graph.
 5. **Knowledge Gap & Orphan Concept Finder:**
    - Knowledge Hub filters identify concepts referenced repeatedly (3+ occurrences) across resources that lack a dedicated defining document, providing one-click AI drafting.
-6. **Universal Viewers:**
-   - **TOC ScrollSpy:** Dynamic table of contents that tracks reading position.
+6. **Universal Viewers & Direct Editing:**
+   - **TOC ScrollSpy:** Dynamic table of contents that tracks reading position in clean single-view documents.
    - **Slide Grid Sorter:** Thumbnail grid overview for rapid slide rearrangement and navigation.
-   - **Split View:** Seamless toggling between WYSIWYG visual preview and raw Markdown.
+   - **Direct In-Place Editing:** Click any content block directly to edit in place, with floating Confirm/Cancel action controls and real-time collaborator presence badges.
 
 ---
 

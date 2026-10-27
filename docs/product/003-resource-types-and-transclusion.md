@@ -36,8 +36,8 @@ Project P normalizes incoming file formats into structured intermediate schemas 
 ### 1.1 Document (`.doc`, `.docx`, `.pdf`, `.md`, `.txt`)
 - **Rendering:** Article reader view with dynamic TOC ScrollSpy.
 - **Capabilities:**
-  - In-place WYSIWYG block editing.
-  - Split view between visual rendering and raw Markdown.
+  - Clean single-view article layout with dynamic TOC ScrollSpy navigation.
+  - Direct click-to-edit on content blocks with floating Confirm/Cancel controls.
   - Block-level locking during active typing.
   - Inline annotations and transcluded embed containers.
 

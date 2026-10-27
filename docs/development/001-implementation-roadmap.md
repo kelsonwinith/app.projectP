@@ -21,16 +21,17 @@ This document outlines the phased engineering milestones, deliverable checklists
 - [x] Knowledge Hub interface with high-frequency orphan concept gap discovery and one-click AI drafting.
 - [x] Visual transclusion reference mapping and cross-resource linkage views.
 
-### Phase 3: Universal Resource Viewers (In Progress / Priority 1)
-- [ ] Document Viewer: Article view with dynamic TOC ScrollSpy and WYSIWYG / Markdown split mode.
-- [ ] Interactive Table Grid: High-performance data grid with cell-level editing and concurrency locking.
-- [ ] Slide Deck Presenter: Interactive slide viewer with keyboard navigation and Slide Grid Sorter overview.
-- [ ] Graph Canvas (Mermaid), Visual Board, and Code / Spec syntax-highlighted viewers.
+### Phase 3: Universal Resource Viewers (Completed)
+- [x] Document Viewer: Clean single-view article layout with dynamic TOC ScrollSpy and direct click-to-edit.
+- [x] Interactive Table Grid: High-performance data grid with cell-level editing and concurrency locking.
+- [x] Slide Deck Presenter: Interactive slide viewer with keyboard navigation and Slide Grid Sorter overview.
+- [x] Multimodal Viewers: System Graph Canvas, Code / Spec syntax viewer, Vision Image Annotator, and Synchronized Audio Transcript Player.
+- [x] Unified sub-header toolbar (`h-11`) with consistent hierarchy, floating user presence badges, and floating Confirm/Cancel action controls.
 
-### Phase 4: Shared Temp Drafts & 3-Tab Save Modal (Priority 2)
-- [ ] Local-first shared temp draft engine persisting uncommitted block/cell edits across reloads.
-- [ ] Targeted block-level revert action restoring authoritative state.
-- [ ] 3-Tab Save Modal: Tab 1 (Original), Tab 2 (Proposed Diff with `+words/-words` stats & per-block checkboxes), Tab 3 (Notes & Conflict Detection report).
+### Phase 4: Shared Temp Drafts & 3-Tab Save Modal (Completed)
+- [x] Local-first shared temp draft engine persisting uncommitted block/cell edits across reloads.
+- [x] Targeted block-level revert action restoring authoritative state.
+- [x] 3-Tab Save Modal: Tab 1 (Original), Tab 2 (Proposed Diff with `+words/-words` stats & per-block checkboxes), Tab 3 (Notes & Conflict Detection report).
 
 ### Phase 5: Production Hardening & Cloud Sync Federation (Backlog)
 - [ ] Cross-tab synchronization via `BroadcastChannel` event bus.
