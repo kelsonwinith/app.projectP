@@ -24,11 +24,7 @@ import {
   LayoutGrid,
   FileText,
   RotateCcw,
-  Lock,
   Sparkles,
-  Maximize2,
-  Check,
-  Edit2,
   Presentation,
 } from "lucide-react"
 
@@ -166,42 +162,6 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
             <FileText className="size-3" />
             Speaker Notes
           </Button>
-          {isEditing ? (
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2.5 text-xs font-medium"
-                onClick={() => {
-                  setTitleEdit(currentSlide.title)
-                  setSubEdit(currentSlide.subtitle)
-                  setBulletsEdit(currentSlide.bullets.join("\n"))
-                  setIsEditing(false)
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 px-2.5 text-xs font-medium"
-                onClick={handleSaveSlideDraft}
-              >
-                Confirm
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={Boolean(currentSlidePeerLock)}
-              className="h-7 gap-1.5 text-xs font-medium"
-              onClick={() => setIsEditing(true)}
-              title={currentSlidePeerLock ? `Locked by ${currentSlideCollab?.name}` : "Click to edit slide"}
-            >
-              <Edit2 className="size-3" />
-              {currentSlidePeerLock ? "Locked" : "Edit Slide"}
-            </Button>
-          )}
           {currentSlide.isDraftModified && (
             <Button
               variant="ghost"
@@ -268,28 +228,6 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
                     onChange={(e) => setBulletsEdit(e.target.value)}
                   />
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      setTitleEdit(currentSlide.title)
-                      setSubEdit(currentSlide.subtitle)
-                      setBulletsEdit(currentSlide.bullets.join("\n"))
-                      setIsEditing(false)
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={handleSaveSlideDraft}
-                  >
-                    Confirm
-                  </Button>
-                </div>
               </div>
             ) : (
               <div
@@ -324,6 +262,32 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
               <span>Project P Collaborative Architecture</span>
               <span className="font-mono text-[10px]">Confidential & Proprietary</span>
             </div>
+
+            {/* Floating bottom action group when editing */}
+            {isEditing && (
+              <div className="absolute -bottom-3.5 right-6 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setTitleEdit(currentSlide.title)
+                    setSubEdit(currentSlide.subtitle)
+                    setBulletsEdit(currentSlide.bullets.join("\n"))
+                    setIsEditing(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-6 px-2 text-xs font-medium"
+                  onClick={handleSaveSlideDraft}
+                >
+                  Confirm
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Floating Navigation Controls */}

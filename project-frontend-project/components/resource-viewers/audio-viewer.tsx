@@ -15,10 +15,7 @@ import {
   Volume2,
   VolumeX,
   Sparkles,
-  Check,
-  Edit2,
   Clock,
-  Radio,
 } from "lucide-react"
 
 interface AudioViewerProps {
@@ -281,17 +278,6 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                         Temp Draft
                       </Badge>
                     )}
-                    {!isEditing && !isPeerLocked ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-                        onClick={() => handleStartEdit(item)}
-                      >
-                        <Edit2 className="size-2.5 mr-1" />
-                        Edit Transcript
-                      </Button>
-                    ) : null}
                     {item.isDraftModified && (
                       <Button
                         variant="ghost"
@@ -307,7 +293,7 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                 </div>
 
                 {isEditing ? (
-                  <div className="space-y-2 mt-2">
+                  <div className="mt-2">
                     <textarea
                       className="w-full text-xs font-sans leading-relaxed p-2.5 rounded-lg border border-primary bg-background focus:outline-hidden"
                       rows={3}
@@ -315,18 +301,19 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                       onChange={(e) => setEditText(e.target.value)}
                       autoFocus
                     />
-                    <div className="flex justify-end gap-1.5">
+                    {/* Floating bottom action group */}
+                    <div className="absolute -bottom-3.5 right-4 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-7 px-2.5 text-xs font-medium"
+                        className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                         onClick={() => setEditingItemId(null)}
                       >
                         Cancel
                       </Button>
                       <Button
                         size="sm"
-                        className="h-7 px-2.5 text-xs font-medium"
+                        className="h-6 px-2 text-xs font-medium"
                         onClick={() => handleSaveEdit(item)}
                       >
                         Confirm

@@ -19,8 +19,6 @@ import {
   RotateCcw,
   Sparkles,
   Layers,
-  Edit2,
-  Check,
 } from "lucide-react"
 
 interface GraphViewerProps {
@@ -235,23 +233,12 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-mono text-muted-foreground">Architectural Role</span>
-                <div className="flex items-center gap-2">
-                  {!isEditingRole && !isSelectedNodeLocked ? (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingRole(true)}
-                      className="text-[11px] text-primary hover:underline flex items-center gap-1"
-                    >
-                      <Edit2 className="size-2.5" /> Edit
-                    </button>
-                  ) : null}
-                </div>
+              <div className="text-[11px] font-mono text-muted-foreground mb-1">
+                Architectural Role
               </div>
 
               {isEditingRole ? (
-                <div className="relative space-y-2 p-3 rounded-lg border border-primary bg-primary/5 ring-1 ring-primary/20">
+                <div className="relative p-2.5 rounded-lg border border-primary bg-primary/5 ring-1 ring-primary/20">
                   <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 z-10 pointer-events-auto">
                     <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
                   </div>
@@ -261,18 +248,19 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
                     onChange={(e) => setRoleInput(e.target.value)}
                     autoFocus
                   />
-                  <div className="flex justify-end gap-1.5">
+                  {/* Floating bottom action group */}
+                  <div className="absolute -bottom-3.5 right-2 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="h-7 px-2.5 text-xs font-medium"
+                      className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                       onClick={() => setIsEditingRole(false)}
                     >
                       Cancel
                     </Button>
                     <Button
                       size="sm"
-                      className="h-7 px-2.5 text-xs font-medium"
+                      className="h-6 px-2 text-xs font-medium"
                       onClick={handleSaveRoleDraft}
                     >
                       Confirm

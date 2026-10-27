@@ -18,8 +18,6 @@ import {
   RotateCcw,
   Sparkles,
   ListTree,
-  Edit2,
-  Eye,
 } from "lucide-react"
 
 interface CodeViewerProps {
@@ -108,41 +106,6 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
               {copied ? "Copied" : "Copy Code"}
             </Button>
 
-            {isEditing ? (
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5 text-xs font-medium"
-                  onClick={() => {
-                    setCodeEdit(effectiveCode)
-                    setIsEditing(false)
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-7 px-2.5 text-xs font-medium"
-                  onClick={handleSaveCode}
-                >
-                  Confirm
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={Boolean(codeLock)}
-                className="h-7 gap-1.5 text-xs font-medium"
-                onClick={() => setIsEditing(true)}
-                title={codeLock ? `Locked by ${codeCollab?.name}` : "Click code or this button to edit"}
-              >
-                <Edit2 className="size-3" />
-                {codeLock ? "Locked" : "Edit Code"}
-              </Button>
-            )}
-
             {isDraftModified && (
               <Button
                 variant="ghost"
@@ -169,6 +132,30 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
           {activeCodeEditor && (
             <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
               <UserEditingBadge collaborator={activeCodeEditor} textPosition="right" />
+            </div>
+          )}
+
+          {/* Floating bottom action group when editing */}
+          {isEditing && (
+            <div className="absolute bottom-4 right-6 z-30 flex items-center gap-1.5 p-1 bg-slate-900/95 backdrop-blur-xs border border-slate-700 shadow-xl rounded-lg">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800"
+                onClick={() => {
+                  setCodeEdit(effectiveCode)
+                  setIsEditing(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-6 px-2 text-xs font-medium"
+                onClick={handleSaveCode}
+              >
+                Confirm
+              </Button>
             </div>
           )}
 

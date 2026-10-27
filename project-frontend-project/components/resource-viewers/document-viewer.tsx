@@ -17,11 +17,6 @@ import {
   RotateCcw,
   Sparkles,
   Link2,
-  Check,
-  Columns,
-  Eye,
-  Edit3,
-  Lock,
 } from "lucide-react"
 
 interface DocumentViewerProps {
@@ -271,7 +266,7 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                   </div>
 
                   {isEditing ? (
-                    <div className="space-y-2.5 mt-3">
+                    <div className="mt-2">
                       <textarea
                         className="w-full text-xs font-mono leading-relaxed p-3 rounded-lg border border-primary bg-background focus:outline-hidden min-h-[90px]"
                         value={currentVal}
@@ -280,18 +275,19 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                         }
                         autoFocus
                       />
-                      <div className="flex justify-end gap-2">
+                      {/* Floating bottom action group */}
+                      <div className="absolute -bottom-3.5 right-4 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-7 text-xs font-medium"
+                          className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                           onClick={() => setEditingBlockId(null)}
                         >
                           Cancel
                         </Button>
                         <Button
                           size="sm"
-                          className="h-7 text-xs font-medium"
+                          className="h-6 px-2 text-xs font-medium"
                           onClick={() => handleSaveBlock(block.id, block.originalCommitted)}
                         >
                           Confirm
@@ -301,18 +297,12 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                   ) : (
                     <div
                       onClick={() => !isPeerLocked && handleStartEdit(block.id, block.currentContent)}
-                      className={`${isPeerLocked ? "cursor-not-allowed select-none opacity-90" : "cursor-pointer group/content"} rounded-md transition-colors`}
-                      title={isPeerLocked ? `${peerCollab?.name} is currently editing this block` : "Click to edit in-place"}
+                      className={`${isPeerLocked ? "cursor-not-allowed select-none opacity-90" : "cursor-pointer"} rounded-md transition-colors`}
+                      title={isPeerLocked ? `${peerCollab?.name} is currently editing this block` : "Click to edit"}
                     >
-                      <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap group-hover/content:text-foreground">
+                      <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">
                         {block.currentContent}
                       </p>
-                      {!isPeerLocked && (
-                        <div className="text-[10px] text-muted-foreground opacity-0 group-hover/content:opacity-100 transition-opacity mt-2 flex items-center gap-1">
-                          <Edit3 className="size-2.5" />
-                          Click to edit in-place
-                        </div>
-                      )}
                     </div>
                   )}
                 </section>

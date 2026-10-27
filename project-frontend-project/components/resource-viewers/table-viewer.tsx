@@ -19,7 +19,6 @@ import {
   Lock,
   ArrowUpDown,
   Filter,
-  Check,
   RotateCcw,
 } from "lucide-react"
 
@@ -262,12 +261,12 @@ export function TableViewer({ resourceName }: TableViewerProps) {
 
                         if (editingCell?.rowId === row.id && editingCell?.col === "currentDosage") {
                           return (
-                            <div className="relative flex items-center gap-1.5 border border-blue-500 rounded p-1 bg-blue-50/20 ring-1 ring-blue-500/30">
+                            <div className="relative border border-blue-500 rounded p-0.5 bg-blue-50/20 ring-1 ring-blue-500/30">
                               <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 pointer-events-auto z-10">
                                 <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
                               </div>
                               <Input
-                                className="h-7 text-xs font-mono w-24"
+                                className="h-7 text-xs font-mono w-full"
                                 value={cellInputVal}
                                 onChange={(e) => setCellInputVal(e.target.value)}
                                 onKeyDown={(e) => {
@@ -276,21 +275,24 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                                 }}
                                 autoFocus
                               />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 px-2 text-[11px]"
-                                onClick={() => setEditingCell(null)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="h-7 px-2 text-[11px]"
-                                onClick={() => handleFinishEdit(origRow)}
-                              >
-                                Confirm
-                              </Button>
+                              {/* Floating bottom action group */}
+                              <div className="absolute -bottom-8 right-0 z-30 flex items-center gap-1 p-0.5 bg-background border border-border shadow-md rounded-md">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                                  onClick={() => setEditingCell(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-6 px-1.5 text-[10px] font-medium"
+                                  onClick={() => handleFinishEdit(origRow)}
+                                >
+                                  Confirm
+                                </Button>
+                              </div>
                             </div>
                           )
                         }
@@ -320,7 +322,7 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                     {/* Response Rate (Editable with progress bar) */}
                     <td className="py-2 px-3 text-right">
                       {editingCell?.rowId === row.id && editingCell?.col === "responseRate" ? (
-                        <div className="relative flex items-center justify-end gap-1.5 border border-blue-500 rounded p-1 bg-blue-50/20 ring-1 ring-blue-500/30">
+                        <div className="relative border border-blue-500 rounded p-0.5 bg-blue-50/20 ring-1 ring-blue-500/30">
                           <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 pointer-events-auto z-10">
                             <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
                           </div>
@@ -335,21 +337,24 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                             }}
                             autoFocus
                           />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-[11px]"
-                            onClick={() => setEditingCell(null)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-7 px-2 text-[11px]"
-                            onClick={() => handleFinishEdit(origRow)}
-                          >
-                            Confirm
-                          </Button>
+                          {/* Floating bottom action group */}
+                          <div className="absolute -bottom-8 right-0 z-30 flex items-center gap-1 p-0.5 bg-background border border-border shadow-md rounded-md">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                              onClick={() => setEditingCell(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-6 px-1.5 text-[10px] font-medium"
+                              onClick={() => handleFinishEdit(origRow)}
+                            >
+                              Confirm
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <div

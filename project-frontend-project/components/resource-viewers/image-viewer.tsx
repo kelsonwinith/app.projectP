@@ -18,7 +18,6 @@ import {
   RotateCcw,
   Sparkles,
   Tag,
-  Check,
 } from "lucide-react"
 
 interface ImageViewerProps {
@@ -292,22 +291,11 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    Design Verification Comment
-                  </span>
-                  {!isEditingComment && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingComment(true)}
-                      className="text-[11px] text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
-                  )}
+                <div className="text-[11px] font-mono text-muted-foreground mb-1">
+                  Design Verification Comment
                 </div>
                 {isEditingComment ? (
-                  <div className="space-y-2">
+                  <div className="relative">
                     <Textarea
                       rows={3}
                       className="text-xs"
@@ -315,11 +303,12 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
                       onChange={(e) => setCommentEdit(e.target.value)}
                       autoFocus
                     />
-                    <div className="flex justify-end gap-1.5">
+                    {/* Floating bottom action group */}
+                    <div className="absolute -bottom-3.5 right-2 z-30 flex items-center gap-1.5 p-1 bg-background border border-border shadow-md rounded-lg">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-7 px-2.5 text-xs font-medium"
+                        className="h-6 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setCommentEdit(selectedAnnotation.comment)
                           setIsEditingComment(false)
@@ -329,7 +318,7 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
                       </Button>
                       <Button
                         size="sm"
-                        className="h-7 px-2.5 text-xs font-medium"
+                        className="h-6 px-2 text-xs font-medium"
                         onClick={handleSaveComment}
                       >
                         Confirm
