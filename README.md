@@ -54,3 +54,4 @@
 | **[05_API_SPECIFICATION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/05_API_SPECIFICATION.md)** | APIs: Temp Draft Sync, 3-Tab Save API, Selective Block Commit, Canonical Glossary API |
 | **[06_IMPLEMENTATION_ROADMAP.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/06_IMPLEMENTATION_ROADMAP.md)** | แผนงานพัฒนาตามลำดับความสำคัญ 4 ระยะ |
 | **[07_RESOURCE_TYPES_AND_TRANSCLUSION.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/07_RESOURCE_TYPES_AND_TRANSCLUSION.md)** | **ข้อกำหนด 6 ประเภท Resource และระบบ Transclusion:** อ้างอิงและฝังกราฟ/ตาราง/สไลด์ข้ามไฟล์แบบไม่ Duplicate Code |
+| **[08_ADR_FRONTEND_WORKSPACE_ARCHITECTURE.md](file:///Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/docs/08_ADR_FRONTEND_WORKSPACE_ARCHITECTURE.md)** | **ADR 008:** สถาปัตยกรรม Frontend Workspace: Side Panel ซ้าย/ขวา, Full Chat ➔ Resource Viewer + Floating Mini-Chat |
