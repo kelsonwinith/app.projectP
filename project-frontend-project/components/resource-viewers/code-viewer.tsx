@@ -153,10 +153,10 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
               : ""
           }`}
         >
-          {/* Floating at Top Right Corner of that block being edited */}
+          {/* Floating at Top Right Corner of that block being edited with text on right */}
           {activeCodeEditor && (
-            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-3 z-20 pointer-events-auto">
-              <UserEditingBadge collaborator={activeCodeEditor} textPosition="left" />
+            <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
+              <UserEditingBadge collaborator={activeCodeEditor} textPosition="right" />
             </div>
           )}
 

@@ -251,14 +251,14 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                     : "border-border bg-card/40 hover:border-border/80"
                 }`}
               >
-                {/* Absolute floating Avatar centered on the edge of the corner */}
+                {/* Absolute floating Avatar centered on the edge of the corner with text on right */}
                 {activeAudioEditor && (
-                  <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-3 z-20 pointer-events-auto">
-                    <UserEditingBadge collaborator={activeAudioEditor} textPosition="left" />
+                  <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
+                    <UserEditingBadge collaborator={activeAudioEditor} textPosition="right" />
                   </div>
                 )}
 
-                <div className={`flex items-center justify-between gap-3 mb-2 ${activeAudioEditor ? "pr-28" : ""}`}>
+                <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold ${item.speakerColor}`}

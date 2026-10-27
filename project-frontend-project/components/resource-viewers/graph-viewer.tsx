@@ -179,14 +179,14 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
                       : "border-border bg-card/60 hover:border-primary/50 hover:shadow-xs"
                   }`}
                 >
-                  {/* Floating Top Right Corner Status */}
+                  {/* Floating Top Right Corner Status with text on right */}
                   {isNodeLocked && nodeCollab && (
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-2 z-10 pointer-events-auto">
-                      <UserEditingBadge collaborator={nodeCollab} size="xs" textPosition="left" />
+                    <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 z-10 pointer-events-auto">
+                      <UserEditingBadge collaborator={nodeCollab} size="xs" textPosition="right" />
                     </div>
                   )}
 
-                  <div className={`flex items-center justify-between gap-2 mb-3 ${isNodeLocked ? "pr-24" : ""}`}>
+                  <div className="flex items-center justify-between gap-2 mb-3">
                     <span className="font-semibold text-sm text-foreground">
                       {node.label}
                     </span>
