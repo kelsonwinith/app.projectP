@@ -250,13 +250,13 @@ One project. One source of truth. More impact.
 
 ### ชุดข้อความที่แนะนำให้ใช้จริง
 
-**ปัญหา**  
+**ปัญหา**<br>
 “วันนี้ AI ทำงานเร็วมาก แต่ความรู้ที่ AI ใช้ยังแยกกันอยู่กับแต่ละคน”
 
-**คำตอบของ Project P**  
+**คำตอบของ Project P**<br>
 “Project P ทำให้ข้อมูลของโปรเจกต์กลายเป็นความรู้ชุดเดียว แล้วให้ทุกคนสร้างงานจากความรู้นั้นได้ทันที”
 
-**ผลลัพธ์**  
+**ผลลัพธ์**<br>
 “จากเดิมที่ต้องหาไฟล์ก่อนเริ่มงาน กลายเป็นเริ่มจากคำถาม แล้วได้งานฉบับแรกที่มีที่มาและพร้อมแก้ไข”
 
 ---
@@ -267,64 +267,64 @@ One project. One source of truth. More impact.
 
 ### ภาพที่ 1 — ก่อนและหลัง: จากหาเอง สู่สั่งแล้วได้งาน
 
-**ใช้ใน:** Slide 1 หรือ Slide 2  
+**ใช้ใน:** Slide 1 หรือ Slide 2<br>
 **ภาพที่ควรสร้าง:** แบ่งภาพเป็น 2 ฝั่ง
 
 - ฝั่งซ้าย: คนหนึ่งเปิดไฟล์/โฟลเดอร์หลายหน้าต่าง มีคำว่า “หาไฟล์”, “เวอร์ชันไหนล่าสุด?”, “ถามใครดี?”
 - ฝั่งขวา: Project P มีช่องถามกลางหน้า พิมพ์ว่า “ทำสไลด์สรุปสถานะโปรเจกต์” แล้วปรากฏการ์ดสไลด์ฉบับร่างพร้อมแหล่งอ้างอิง
 
-**หน้าจออ้างอิง:** [workspace-chat.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/workspace-chat.tsx>) และ [page.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/app/(workspace)/page.tsx>)  
+**หน้าจออ้างอิง:** [workspace-chat.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/workspace-chat.tsx>) และ [page.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/app/(workspace)/page.tsx>)<br>
 **สิ่งที่ต้องเห็นในภาพ:** ช่อง prompt, แท็กแหล่งอ้างอิง, และการ์ด `Draft` ที่กดบันทึก/เปิดงานต่อได้
 
 ### ภาพที่ 2 — Hero product shot: เปลี่ยนคำสั่งเป็นสไลด์ที่แก้ไขได้
 
-**ใช้ใน:** Slide 4 (ภาพหลัก)  
+**ใช้ใน:** Slide 4 (ภาพหลัก)<br>
 **ภาพที่ควรสร้าง:** หน้าจอ Project P ที่เห็นบทสนทนาด้านล่างหรือด้านข้าง, คำตอบที่อ้างอิงเอกสารที่ใช้, และสไลด์ฉบับร่างตรงกลางที่กำลังแก้ไขได้
 
-**คำบนภาพ:**  
+**คำบนภาพ:**<br>
 `พิมพ์สิ่งที่อยากได้ → ได้งานฉบับแรก → ทีมช่วยกันทำให้ดีขึ้น`
 
-**หน้าจออ้างอิง:** [workspace-chat.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/workspace-chat.tsx>) และ [presentation-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/presentation-viewer.tsx>)  
+**หน้าจออ้างอิง:** [workspace-chat.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/workspace-chat.tsx>) และ [presentation-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/presentation-viewer.tsx>)<br>
 **สิ่งที่ต้องเห็นในภาพ:** คำสั่ง, แหล่งอ้างอิง, สไลด์, และปุ่มแก้ไข/บันทึก
 
 ### ภาพที่ 3 — แก้ได้โดยไม่กลัวพัง
 
-**ใช้ใน:** Slide 4 หรือ Slide 5  
+**ใช้ใน:** Slide 4 หรือ Slide 5<br>
 **ภาพที่ควรสร้าง:** เปรียบเทียบข้อความเดิมกับข้อความที่แก้, มีช่องเลือกว่าจะบันทึกส่วนใด และมีสถานะว่าเนื้อหาส่วนอื่นยังเก็บเป็นฉบับร่างได้
 
-**คำบนภาพ:**  
+**คำบนภาพ:**<br>
 `ลองแก้ได้เต็มที่ เลือกบันทึกเฉพาะสิ่งที่มั่นใจ`
 
-**หน้าจออ้างอิง:** [save-modal.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/save-modal.tsx>) และ [document-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/document-viewer.tsx>)  
+**หน้าจออ้างอิง:** [save-modal.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/save-modal.tsx>) และ [document-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/document-viewer.tsx>)<br>
 **สิ่งที่ต้องเห็นในภาพ:** Before/After, เครื่องหมายเลือก, ป้ายฉบับร่าง, และข้อความเตือนหากข้อมูลไม่ตรงกัน
 
 ### ภาพที่ 4 — ความรู้หนึ่งจุด ไปถึงทุกที่ที่เกี่ยวข้อง
 
-**ใช้ใน:** Slide 5  
+**ใช้ใน:** Slide 5<br>
 **ภาพที่ควรสร้าง:** เอกสารต้นทาง 1 ใบตรงกลาง เชื่อมไปยังสไลด์, รายงาน และแผนงาน 3 ใบ เมื่อแก้ข้อมูลต้นทาง ทั้งสามใบมีสัญลักษณ์อัปเดตพร้อมกัน
 
-**คำบนภาพ:**  
+**คำบนภาพ:**<br>
 `แก้ข้อมูลต้นทางครั้งเดียว งานที่เกี่ยวข้องเดินไปในทิศทางเดียวกัน`
 
-**หน้าจออ้างอิง:** [knowledge-hub/page.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/app/(workspace)/knowledge-hub/page.tsx>) และ [document-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/document-viewer.tsx>)  
+**หน้าจออ้างอิง:** [knowledge-hub/page.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/app/(workspace)/knowledge-hub/page.tsx>) และ [document-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/document-viewer.tsx>)<br>
 **สิ่งที่ต้องเห็นในภาพ:** แผนผังความเชื่อมโยง, สถานะ Synced, และลูกศรจากต้นทางไปยังงานปลายทาง
 
 ### ภาพที่ 5 — ทีมเดียวกัน ทำงานพร้อมกันได้
 
-**ใช้ใน:** Slide 5 หรือ Slide 6  
+**ใช้ใน:** Slide 5 หรือ Slide 6<br>
 **ภาพที่ควรสร้าง:** เอกสาร/ตารางเดียวที่มีสมาชิก 2–3 คนกำลังแก้ไขคนละส่วน พร้อมป้ายชื่อเล็ก ๆ ที่บอกว่าใครกำลังทำอะไร
 
-**คำบนภาพ:**  
+**คำบนภาพ:**<br>
 `เห็นว่าใครกำลังทำอะไร จึงทำงานต่อกันได้โดยไม่ชนกัน`
 
 **หน้าจออ้างอิง:** [document-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/document-viewer.tsx>), [table-viewer.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/table-viewer.tsx>), และ [collab-presence.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/components/resource-viewers/collab-presence.tsx>)
 
 ### ภาพที่ 6 — มองเห็นสิ่งที่โปรเจกต์ยังไม่รู้
 
-**ใช้ใน:** Slide 6 หรือใช้ตอบคำถามกรรมการ  
+**ใช้ใน:** Slide 6 หรือใช้ตอบคำถามกรรมการ<br>
 **ภาพที่ควรสร้าง:** รายการหัวข้อที่ถูกพูดถึงซ้ำ ๆ พร้อมป้าย “ยังไม่มีเจ้าของข้อมูล” และปุ่ม “สร้างเอกสารฉบับแรก”
 
-**คำบนภาพ:**  
+**คำบนภาพ:**<br>
 `Project P ไม่ได้แค่ตอบคำถาม แต่ช่วยบอกว่าคำถามสำคัญข้อไหนที่ทีมยังไม่มีคำตอบ`
 
 **หน้าจออ้างอิง:** [knowledge-hub/page.tsx](</Users/sinthonwilke/On%20My%20Mac/GitHub/app.resourceProject/project-frontend-project/app/(workspace)/knowledge-hub/page.tsx>)
