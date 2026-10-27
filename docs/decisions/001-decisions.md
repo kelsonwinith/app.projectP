@@ -189,3 +189,32 @@ We implemented a dedicated "Private" hierarchy in the workspace:
 ## Consequences
 - **Positive**: Complete privacy and isolation for personal scratchpad files; zero contamination of shared team retrieval embeddings, glossary citations, or knowledge gap statistics; clear visual identity in the universal viewer.
 - **Negative / Trade-offs**: Resources in the Private section cannot be transcluded by team documents or cited in public synthesis responses unless explicitly migrated to public Collections.
+
+---
+
+# ADR-010: Workspace Rules as Project Agent Skills and Safety Guardrails
+
+## Status
+Accepted
+
+## Context
+As teams leverage AI assistant synthesis, resource generation, and conversational querying across a complex workspace, they require explicit control over agent behavior, safety boundaries, style standards, and knowledge grounding. Without configurable project-wide skills and guardrails, the assistant may hallucinate uncommitted roadmap deadlines, suggest destructive database migrations without rollbacks, format timestamps inconsistently, or leak private files into team summaries. Users required a centralized "Rules" management interface where rules can be created, toggled, categorized, and dynamically injected into the AI system directives.
+
+## Decision
+We implemented a dedicated Workspace Rules engine and management page:
+1. **Rule Categorization & Polarity**:
+   - **Do Directives (`type: 'do'`)**: Proactive agent skills dictating actions the assistant must perform (e.g. ground claims in verified documents, enforce canonical living glossary terms, use standard ISO date formatting).
+   - **Avoid Directives (`type: 'avoid'`)**: Defensive safety guardrails dictating behaviors the assistant must strictly avoid (e.g. never reference or leak Private resources, avoid unvetted schema migrations without rollbacks, avoid fabricating speculative launch deadlines).
+   - **Categories**: `Safety`, `Behavior`, `Style`, and `Knowledge`.
+2. **Dedicated Workspace Navigation**:
+   - Added `/rules` under the primary Workspace navigation items with a live badge displaying active enabled rules count.
+   - Built a comprehensive rules management page featuring KPI summary counters, search filtering, type pills (`All`, `Do's`, `Avoids`), category pills, switch toggles, deletion, and a "New Rule" modal dialog.
+3. **Dynamic Prompt Injection & Audit Badging**:
+   - Active enabled rules are compiled into system directives and prepended to the AI prompt evaluation payload.
+   - Assistant responses in the workspace chat display an `Enforced Rules` pill badge indicating the exact guardrails applied to synthesize that response.
+4. **Persistent Local Store**:
+   - Managed via Zustand with `localStorage` persistence (`project-p-rules`), allowing instant toggles and runtime updates without page reloads.
+
+## Consequences
+- **Positive**: Direct user sovereignty over AI behavior and project agent skills; transparent verification badges in chat showing which guardrails were enforced; immediate toggleability of safety rules.
+- **Negative / Trade-offs**: Active rules increase system prompt token overhead proportionally to the number of enabled directives.

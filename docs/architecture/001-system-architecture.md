@@ -96,3 +96,12 @@ To guarantee personal data sovereignty without polluting workspace grounding:
    - Vector embedding pipelines, living glossary term matchers, and contradiction scanners filter out any resource matching `isResourcePrivate(name)`.
    - Assistant chat sessions in private mode acknowledge personal isolation and suppress public SSoT citations.
 3. **Collaborative Presence Boundary:** External multi-user presence avatars and locks are deactivated for private files, displaying a single-user isolated state badge.
+
+---
+
+## 7. Agent Rules & Safety Guardrails Engine
+
+To enforce project-wide agent skills and defensive guardrails:
+1. **Polarity Directives:** Directives are categorized as proactive actions to perform (`do`) or defensive violations to avoid (`avoid`) across Safety, Behavior, Style, and Knowledge domains.
+2. **Dynamic Prompt Assembly:** Active rules (`enabled: true`) are gathered from the persistent rules store and injected as authoritative instructions into LLM system prompts before dispatching workspace chat and synthesis requests.
+3. **Audit Tracking & Badging:** The synthesis pipeline returns the list of enforced rules with assistant responses, rendering verification badges (`ShieldCheck`) in the user interface.

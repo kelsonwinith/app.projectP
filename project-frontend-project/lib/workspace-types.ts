@@ -2,7 +2,7 @@ import {
   AudioLines,
   BookOpen, Code2, FileText, Folder, FolderPlus,
   ImageIcon, LayoutGrid, Library, MessageSquareText,
-  Network, Presentation, Settings2, Sparkles, Table2, Users, Zap,
+  Network, Presentation, Settings2, ShieldCheck, Sparkles, Table2, Users, Zap,
 } from 'lucide-react'
 
 export type Collection = {
@@ -25,6 +25,17 @@ export type Resource = {
   isPrivate?: boolean
 }
 
+export interface WorkspaceRule {
+  id: string
+  title: string
+  category: "Safety" | "Behavior" | "Style" | "Knowledge"
+  type: "do" | "avoid"
+  description: string
+  examples: string[]
+  enabled: boolean
+  systemDirective: string
+}
+
 export type ChatMessageItem = {
   role: 'user' | 'assistant'
   text: string
@@ -33,6 +44,7 @@ export type ChatMessageItem = {
   hasConflictWarning?: boolean
   conflictDetails?: { conflictingFile: string; reason: string }
   generatedResourceDraft?: { title: string; type: string; preview: string }
+  appliedRules?: string[]
 }
 
 export type NavItem = {
@@ -46,7 +58,89 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Workspace', href: '/', icon: LayoutGrid },
   { label: 'Knowledge hub', href: '/knowledge-hub', icon: Library },
   { label: 'Glossary', href: '/glossary', icon: BookOpen, badge: 12 },
+  { label: 'Rules', href: '/rules', icon: ShieldCheck, badge: 6 },
   { label: 'Activity', href: '/activity', icon: Zap },
+]
+
+export const DEFAULT_RULES: WorkspaceRule[] = [
+  {
+    id: "rule-1",
+    title: "Ground all claims in verified documents",
+    category: "Knowledge",
+    type: "do",
+    description: "Ensure all answers and synthesized resources reference active workspace documentation rather than external or unverified assumptions.",
+    examples: [
+      "Cite 'API Specification v2' when explaining authentication flows",
+      "Reference 'Clinical Trial Metrics' for exact dosage numbers",
+    ],
+    enabled: true,
+    systemDirective: "Ground every factual assertion in verified project resources. Include source citations and never invent specifications.",
+  },
+  {
+    id: "rule-2",
+    title: "Never expose or index Private resources",
+    category: "Safety",
+    type: "avoid",
+    description: "Strictly prevent personal notes, scratchpads, or private files from being cited in shared synthesis, living glossary, or team knowledge graphs.",
+    examples: [
+      "Do not mention content from Private folders in public chat synthesis",
+      "Do not create cross-document links pointing to personal files",
+    ],
+    enabled: true,
+    systemDirective: "Never reference, leak, or index resources marked as Private into team-facing documents or public synthesis.",
+  },
+  {
+    id: "rule-3",
+    title: "Enforce Canonical Terms from Living Glossary",
+    category: "Behavior",
+    type: "do",
+    description: "Standardize acronyms and aliases to their canonical terms (e.g. use 'Kubernetes' instead of informal variations like 'kube').",
+    examples: [
+      "Standardize 'K8s' and 'k8s' to 'Kubernetes'",
+      "Use 'Shared Temp Draft' for collaborative ephemeral state",
+    ],
+    enabled: true,
+    systemDirective: "Always map known acronyms and synonyms to their canonical glossary term to maintain consistent terminology.",
+  },
+  {
+    id: "rule-4",
+    title: "Avoid unvetted schema migrations without rollbacks",
+    category: "Safety",
+    type: "avoid",
+    description: "Do not propose destructive database changes, column drops, or schema modifications without an accompanying rollback script and zero-downtime strategy.",
+    examples: [
+      "Do not suggest 'DROP TABLE' or irreversible 'ALTER COLUMN' queries",
+      "Require backward-compatible expansion migrations",
+    ],
+    enabled: true,
+    systemDirective: "Refuse to generate destructive database schema alterations without explicit rollback procedures and data safety precautions.",
+  },
+  {
+    id: "rule-5",
+    title: "Standardize metric units and ISO-8601 timestamps",
+    category: "Style",
+    type: "do",
+    description: "Use international standard units (mg, mL, Celsius, UTC, ISO-8601 dates) across all tabular resources, graphs, and documentation.",
+    examples: [
+      "Write '2026-10-27T17:00:00Z' instead of informal 'yesterday afternoon'",
+      "Standardize clinical measurements to mg/dL",
+    ],
+    enabled: true,
+    systemDirective: "Format all dates, times, and quantitative physical metrics using ISO standards and SI metric units.",
+  },
+  {
+    id: "rule-6",
+    title: "Avoid speculative roadmap milestones",
+    category: "Behavior",
+    type: "avoid",
+    description: "Do not fabricate delivery quarters, launch deadlines, or engineering commitments that are not explicitly documented in the verified Product Roadmap.",
+    examples: [
+      "Do not claim 'Feature X launches in Q2' unless documented in Roadmap",
+      "Acknowledge uncommitted features as pending triage",
+    ],
+    enabled: true,
+    systemDirective: "Never fabricate release dates, launch quarters, or project timelines that lack explicit documentation in Product Roadmap.",
+  },
 ]
 
 export const DEFAULT_COLLECTIONS: Collection[] = [

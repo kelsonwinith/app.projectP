@@ -448,6 +448,7 @@ export function WorkspaceSidebar() {
     createResource,
     moveResource,
     importFiles,
+    activeRules,
   } = useWorkspace()
 
   // File input ref for import functionality (Finder / File Explorer)
@@ -512,6 +513,7 @@ export function WorkspaceSidebar() {
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
+            const badgeValue = item.href === "/rules" ? activeRules.length : item.badge
             return (
               <Link
                 key={item.href}
@@ -524,12 +526,12 @@ export function WorkspaceSidebar() {
               >
                 <Icon className="size-4 shrink-0" />
                 <span>{item.label}</span>
-                {item.badge && (
+                {typeof badgeValue === "number" && (
                   <Badge
                     variant="secondary"
                     className="ml-auto rounded-full bg-[#fff1cc] dark:bg-[#3d2f0f] text-[#9b7016] dark:text-[#fcd34d] px-1.5 py-0.2 text-[10px] font-semibold border-none"
                   >
-                    {item.badge}
+                    {badgeValue}
                   </Badge>
                 )}
               </Link>

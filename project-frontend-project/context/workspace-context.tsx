@@ -8,7 +8,9 @@ import {
   INITIAL_CHAT_MESSAGES,
   ChatMessageItem,
   Resource,
+  WorkspaceRule,
 } from "@/lib/workspace-types"
+import { useRulesStore } from "@/lib/rules-store"
 import {
   useCollectionStore,
   findFolder,
@@ -44,6 +46,14 @@ interface WorkspaceContextType {
   setRulesMode: (mode: "strict" | "fast") => void
   searchOpen: boolean
   setSearchOpen: (open: boolean) => void
+
+  // Rules (Project Agent Skills & Guardrails)
+  rules: WorkspaceRule[]
+  activeRules: WorkspaceRule[]
+  toggleRule: (id: string) => void
+  addRule: (rule: Omit<WorkspaceRule, "id">) => void
+  deleteRule: (id: string) => void
+  updateRule: (id: string, updates: Partial<WorkspaceRule>) => void
 
   // Actions
   openResourceAndChat: (name: string) => void
@@ -89,6 +99,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const renameFolderInStore = useCollectionStore((state) => state.renameFolder)
   const renameResourceInStore = useCollectionStore((state) => state.renameResource)
   const isResourcePrivate = useCollectionStore((state) => state.isResourcePrivate)
+
+  const rules = useRulesStore((state) => state.rules)
+  const toggleRule = useRulesStore((state) => state.toggleRule)
+  const addRule = useRulesStore((state) => state.addRule)
+  const deleteRule = useRulesStore((state) => state.deleteRule)
+  const updateRule = useRulesStore((state) => state.updateRule)
+
+  const activeRules = React.useMemo(() => rules.filter((r) => r.enabled), [rules])
 
   const router = useRouter()
   const pathname = usePathname()
@@ -393,6 +411,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           ]
         }
 
+        const activeRulesList = useRulesStore.getState().rules.filter((r) => r.enabled)
+        const appliedRules = activeRulesList.slice(0, 3).map((r) => r.title)
+
         const assistantMsg: ChatMessageItem = {
           role: "assistant",
           text: replyText,
@@ -401,6 +422,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           conflictDetails,
           generatedResourceDraft: draft,
           citations: citations.length > 0 ? citations : undefined,
+          appliedRules: appliedRules.length > 0 ? appliedRules : undefined,
         }
 
         setMessages((current) => [...current, assistantMsg])
@@ -489,6 +511,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       sendMessage,
       handleSaveDraft,
       handleMiniChatDragStart,
+      rules,
+      activeRules,
+      toggleRule,
+      addRule,
+      deleteRule,
+      updateRule,
       isResourcePrivate,
     }),
     [
@@ -519,6 +547,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       sendMessage,
       handleSaveDraft,
       handleMiniChatDragStart,
+      rules,
+      activeRules,
+      toggleRule,
+      addRule,
+      deleteRule,
+      updateRule,
       isResourcePrivate,
     ]
   )

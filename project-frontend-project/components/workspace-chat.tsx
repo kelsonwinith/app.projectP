@@ -1,12 +1,14 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   ArrowUp,
   ChevronDown,
   ChevronUp,
   FileText,
   Minus,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react"
 import { useWorkspace } from "@/context/workspace-context"
@@ -20,6 +22,7 @@ export function WorkspaceChat() {
     sendMessage,
     handleSaveDraft,
     openResourceAndChat,
+    activeRules,
   } = useWorkspace()
 
   // Controls whether the chat window between user and AI above the center chat bar is open or hidden
@@ -67,6 +70,14 @@ export function WorkspaceChat() {
                     {openResource}
                   </span>
                 )}
+                <Link
+                  href="/rules"
+                  className="flex items-center gap-1 rounded bg-[#eef3f9] dark:bg-[#1c2736] px-2 py-0.5 text-[10px] font-medium text-[#1c5da7] dark:text-[#60a5fa] hover:opacity-80 transition-opacity ml-1"
+                  title="Configure project agent rules"
+                >
+                  <ShieldCheck className="size-2.5" />
+                  <span>{activeRules.length} rules</span>
+                </Link>
               </div>
 
               {/* Minimize / Hide chat window */}
@@ -99,12 +110,23 @@ export function WorkspaceChat() {
                   >
                     {message.text}
 
-                    {/* Faithfulness Score Badge */}
-                    {message.faithfulnessScore && (
-                      <div className="mt-1 flex items-center gap-1">
-                        <span className="rounded-full border border-[#cbe8db] dark:border-[#14532d] bg-[#edf7f2] dark:bg-[#052e16] px-1.5 py-0.2 text-[9px] font-medium text-[#2f6e54] dark:text-[#4ade80]">
-                          {message.faithfulnessScore}% verified
-                        </span>
+                    {/* Faithfulness Score & Applied Rules Badges */}
+                    {(message.faithfulnessScore || (message.appliedRules && message.appliedRules.length > 0)) && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {message.faithfulnessScore && (
+                          <span className="rounded-full border border-[#cbe8db] dark:border-[#14532d] bg-[#edf7f2] dark:bg-[#052e16] px-1.5 py-0.2 text-[9px] font-medium text-[#2f6e54] dark:text-[#4ade80]">
+                            {message.faithfulnessScore}% verified
+                          </span>
+                        )}
+                        {message.appliedRules && message.appliedRules.length > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full border border-[#d0e0f2] dark:border-[#1e3a5f] bg-[#f0f6ff] dark:bg-[#0d1d33] px-1.5 py-0.2 text-[9px] font-medium text-[#1c5da7] dark:text-[#60a5fa]"
+                            title={`Rules enforced: ${message.appliedRules.join(", ")}`}
+                          >
+                            <ShieldCheck className="size-2.5" />
+                            <span>{message.appliedRules.length} rules enforced</span>
+                          </span>
+                        )}
                       </div>
                     )}
 

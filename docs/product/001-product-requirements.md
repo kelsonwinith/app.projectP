@@ -34,6 +34,10 @@ Project P is a universal AI knowledge workspace and collaborative resource opera
    - A dedicated "Private" section located directly under Collections in the sidebar for personal files that belong solely to the user.
    - Resources created in or moved to Private are strictly isolated from the shared knowledge base: excluded from Living Glossary scans and links, omitted from Knowledge Hub orphan gap detection, and exempted from cross-source contradiction checks.
    - Private files feature a distinct "Personal File" badge and "Private / ..." breadcrumbs in the universal viewer with collaborator presence suppressed.
+8. **Workspace Rules & Project Agent Skills:**
+   - A centralized rules management engine accessible via `/rules` in the sidebar with live active rule counts.
+   - Dual directive polarity: "DO" (proactive agent skills) and "AVOID" (defensive safety guardrails) across Safety, Behavior, Style, and Knowledge categories.
+   - Dynamic injection of active system directives into AI prompt synthesis, accompanied by transparent audit badges on assistant responses in workspace chat.
 
 ---
 
