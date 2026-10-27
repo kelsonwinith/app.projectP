@@ -95,35 +95,43 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
     <div className="flex h-full w-full bg-background overflow-hidden">
       {/* Graph Canvas Arena */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Canvas Toolbar */}
-        <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-card/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-muted-foreground mr-1">Filter:</span>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-                  selectedCategory === cat
-                    ? "bg-primary text-primary-foreground font-medium shadow-xs"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+        {/* Unified Canvas Toolbar */}
+        <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
+              <Network className="size-3.5 text-violet-500" />
+              System Graph
+            </Badge>
+            <span className="text-xs text-muted-foreground font-mono">
+              {nodes.length} nodes
+            </span>
+            <div className="flex items-center gap-1 ml-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                    selectedCategory === cat
+                      ? "bg-primary text-primary-foreground font-medium shadow-xs"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center border border-border rounded-md overflow-hidden bg-background">
+            <div className="flex items-center border border-border rounded-md overflow-hidden bg-background h-7">
               <button
                 type="button"
                 onClick={() => setZoomLevel((z) => Math.max(0.7, z - 0.1))}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="px-2 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Zoom Out"
               >
-                <ZoomOut className="size-3.5" />
+                <ZoomOut className="size-3" />
               </button>
               <span className="text-[11px] font-mono px-2 text-muted-foreground select-none">
                 {Math.round(zoomLevel * 100)}%
@@ -131,23 +139,23 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
               <button
                 type="button"
                 onClick={() => setZoomLevel((z) => Math.min(1.4, z + 0.1))}
-                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="px-2 h-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Zoom In"
               >
-                <ZoomIn className="size-3.5" />
+                <ZoomIn className="size-3" />
               </button>
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-xs"
+              className="h-7 gap-1.5 text-xs font-medium"
               onClick={() => {
                 setSelectedCategory("All")
                 setZoomLevel(1)
               }}
             >
-              <RotateCcw className="size-3.5" />
+              <RotateCcw className="size-3" />
               Reset View
             </Button>
           </div>
@@ -230,11 +238,6 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[11px] font-mono text-muted-foreground">Architectural Role</span>
                 <div className="flex items-center gap-2">
-                  {isSelectedNodeLocked && selectedNodeCollab ? (
-                    <UserEditingBadge collaborator={selectedNodeCollab} size="xs" />
-                  ) : isEditingRole ? (
-                    <UserEditingBadge collaborator={currentUser} size="xs" />
-                  ) : null}
                   {!isEditingRole && !isSelectedNodeLocked ? (
                     <button
                       type="button"
@@ -248,9 +251,12 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
               </div>
 
               {isEditingRole ? (
-                <div className="space-y-2">
+                <div className="relative space-y-2 p-3 rounded-lg border border-primary bg-primary/5 ring-1 ring-primary/20">
+                  <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 z-10 pointer-events-auto">
+                    <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
+                  </div>
                   <Input
-                    className="text-xs"
+                    className="text-xs bg-background"
                     value={roleInput}
                     onChange={(e) => setRoleInput(e.target.value)}
                     autoFocus
@@ -259,24 +265,37 @@ export function GraphViewer({ resourceName }: GraphViewerProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-6 text-[11px]"
+                      className="h-7 px-2.5 text-xs font-medium"
                       onClick={() => setIsEditingRole(false)}
                     >
                       Cancel
                     </Button>
                     <Button
                       size="sm"
-                      className="h-6 text-[11px] gap-1"
+                      className="h-7 px-2.5 text-xs font-medium"
                       onClick={handleSaveRoleDraft}
                     >
-                      <Check className="size-3" /> Save Draft
+                      Confirm
                     </Button>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-foreground/90 p-2.5 rounded-lg bg-muted/40 border border-border">
-                  {selectedNode.role}
-                </p>
+                <div className="relative">
+                  {isSelectedNodeLocked && selectedNodeCollab && (
+                    <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 z-10 pointer-events-auto">
+                      <UserEditingBadge collaborator={selectedNodeCollab} size="xs" textPosition="right" />
+                    </div>
+                  )}
+                  <p
+                    onClick={() => !isSelectedNodeLocked && setIsEditingRole(true)}
+                    className={`text-xs text-foreground/90 p-2.5 rounded-lg bg-muted/40 border border-border transition-colors ${
+                      !isSelectedNodeLocked ? "cursor-pointer hover:border-primary/50" : ""
+                    }`}
+                    title={!isSelectedNodeLocked ? "Click to edit architectural role" : undefined}
+                  >
+                    {selectedNode.role}
+                  </p>
+                </div>
               )}
             </div>
 

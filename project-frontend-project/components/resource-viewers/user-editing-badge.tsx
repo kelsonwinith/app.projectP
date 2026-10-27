@@ -75,7 +75,7 @@ export function UserEditingBadge({
 
   return (
     <TooltipProvider delay={100}>
-      <div className={`inline-flex items-center gap-1.5 select-none ${className}`}>
+      <div className={`inline-flex items-center gap-1.5 select-none whitespace-nowrap ${className}`}>
         {textPosition === "left" && textElement}
         {avatarElement}
         {textPosition === "right" && textElement}

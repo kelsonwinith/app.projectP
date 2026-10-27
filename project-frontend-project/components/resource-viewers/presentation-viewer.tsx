@@ -29,6 +29,7 @@ import {
   Maximize2,
   Check,
   Edit2,
+  Presentation,
 } from "lucide-react"
 
 interface PresentationViewerProps {
@@ -130,10 +131,11 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* Top Toolbar */}
-      <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-card/40 shrink-0">
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="font-mono text-xs">
-            Deck Presenter
+      <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
+            <Presentation className="size-3.5 text-amber-500" />
+            Slide Deck
           </Badge>
           <span className="text-xs text-muted-foreground font-mono">
             Slide {currentIndex + 1} of {slides.length}
@@ -149,48 +151,62 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 text-xs"
+            className="h-7 gap-1.5 text-xs font-medium"
             onClick={() => setShowGridSorter(true)}
           >
-            <LayoutGrid className="size-3.5" />
+            <LayoutGrid className="size-3" />
             Slide Sorter
           </Button>
           <Button
             variant={showNotes ? "secondary" : "outline"}
             size="sm"
-            className="h-8 gap-1.5 text-xs"
+            className="h-7 gap-1.5 text-xs font-medium"
             onClick={() => setShowNotes(!showNotes)}
           >
-            <FileText className="size-3.5" />
+            <FileText className="size-3" />
             Speaker Notes
           </Button>
-          {!isEditing ? (
+          {isEditing ? (
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-xs font-medium"
+                onClick={() => {
+                  setTitleEdit(currentSlide.title)
+                  setSubEdit(currentSlide.subtitle)
+                  setBulletsEdit(currentSlide.bullets.join("\n"))
+                  setIsEditing(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 px-2.5 text-xs font-medium"
+                onClick={handleSaveSlideDraft}
+              >
+                Confirm
+              </Button>
+            </div>
+          ) : (
             <Button
               variant="outline"
               size="sm"
               disabled={Boolean(currentSlidePeerLock)}
-              className="h-8 gap-1.5 text-xs"
+              className="h-7 gap-1.5 text-xs font-medium"
               onClick={() => setIsEditing(true)}
-              title={currentSlidePeerLock ? `Locked by ${currentSlideCollab?.name}` : "Edit this slide"}
+              title={currentSlidePeerLock ? `Locked by ${currentSlideCollab?.name}` : "Click to edit slide"}
             >
-              <Edit2 className="size-3.5" />
+              <Edit2 className="size-3" />
               {currentSlidePeerLock ? "Locked" : "Edit Slide"}
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={handleSaveSlideDraft}
-            >
-              <Check className="size-3.5" />
-              Save Draft
             </Button>
           )}
           {currentSlide.isDraftModified && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => revertTempBlock(resourceName, `slide-${currentSlide.id}`)}
             >
               <RotateCcw className="size-3 mr-1" />
@@ -211,7 +227,7 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
                 : "bg-card border-border"
             }`}
           >
-            {/* Absolute floating Avatar centered on the edge of the corner with text on right */}
+            {/* Absolute floating Avatar centered on the corner edge with text on right */}
             {activeSlideEditor && (
               <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
                 <UserEditingBadge collaborator={activeSlideEditor} textPosition="right" />
@@ -252,11 +268,39 @@ export function PresentationViewer({ resourceName }: PresentationViewerProps) {
                     onChange={(e) => setBulletsEdit(e.target.value)}
                   />
                 </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setTitleEdit(currentSlide.title)
+                      setSubEdit(currentSlide.subtitle)
+                      setBulletsEdit(currentSlide.bullets.join("\n"))
+                      setIsEditing(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleSaveSlideDraft}
+                  >
+                    Confirm
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="my-auto space-y-6">
+              <div
+                className={`my-auto space-y-6 ${!currentSlidePeerLock ? "cursor-pointer group/slide" : ""}`}
+                onClick={() => {
+                  if (!currentSlidePeerLock && !isEditing) setIsEditing(true)
+                }}
+                title={!currentSlidePeerLock ? "Click to edit slide" : undefined}
+              >
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground group-hover/slide:text-primary transition-colors">
                     {currentSlide.title}
                   </h2>
                   <p className="text-sm md:text-base text-muted-foreground mt-2 font-medium">

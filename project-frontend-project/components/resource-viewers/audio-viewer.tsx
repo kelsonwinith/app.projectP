@@ -114,36 +114,33 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
 
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
-      {/* Top Audio Player Hero Arena */}
-      <div className="border-b border-border bg-gradient-to-b from-card to-background p-6 shrink-0 flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border border-fuchsia-500/20 flex items-center justify-center shrink-0">
-              <AudioLines className="size-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-foreground tracking-tight">
-                  {resourceName}
-                </h3>
-                <Badge variant="outline" className="text-[10px] font-mono border-fuchsia-500/30 text-fuchsia-600">
-                  Audio SSoT
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                AI Speech-to-Text Synchronized Recording & Transcripts
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-mono gap-1 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
-              <Sparkles className="size-3" />
-              AI Transcript 99% Verified
+      {/* Unified Sub-header Toolbar */}
+      <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
+            <AudioLines className="size-3.5 text-fuchsia-500" />
+            Audio Transcript
+          </Badge>
+          <span className="text-xs text-muted-foreground font-mono">
+            {transcriptItems.length} segments • {formatSeconds(totalDuration)}
+          </span>
+          {Object.keys(drafts).length > 0 && (
+            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px]">
+              Temp Drafts
             </Badge>
-          </div>
+          )}
         </div>
 
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs font-mono gap-1 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
+            <Sparkles className="size-3" />
+            AI Synchronized
+          </Badge>
+        </div>
+      </div>
+
+      {/* Top Audio Player Hero Arena */}
+      <div className="border-b border-border bg-gradient-to-b from-card to-background p-5 shrink-0 flex flex-col gap-4">
         {/* Waveform & Scrubber Control Bar */}
         <div className="p-4 rounded-xl border border-border bg-card/60 shadow-xs space-y-3">
           {/* Waveform graphic */}
@@ -251,7 +248,7 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                     : "border-border bg-card/40 hover:border-border/80"
                 }`}
               >
-                {/* Absolute floating Avatar centered on the edge of the corner with text on right */}
+                {/* Absolute floating Avatar centered on the corner edge with text on right */}
                 {activeAudioEditor && (
                   <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
                     <UserEditingBadge collaborator={activeAudioEditor} textPosition="right" />
@@ -318,27 +315,32 @@ export function AudioViewer({ resourceName }: AudioViewerProps) {
                       onChange={(e) => setEditText(e.target.value)}
                       autoFocus
                     />
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1.5">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs"
+                        className="h-7 px-2.5 text-xs font-medium"
                         onClick={() => setEditingItemId(null)}
                       >
                         Cancel
                       </Button>
                       <Button
                         size="sm"
-                        className="h-7 text-xs gap-1"
+                        className="h-7 px-2.5 text-xs font-medium"
                         onClick={() => handleSaveEdit(item)}
                       >
-                        <Check className="size-3" />
-                        Save Draft
+                        Confirm
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs leading-relaxed text-foreground/90 pl-8">
+                  <p
+                    onClick={() => !isPeerLocked && !isEditing && handleStartEdit(item)}
+                    className={`text-xs leading-relaxed text-foreground/90 pl-8 ${
+                      !isPeerLocked ? "cursor-pointer hover:text-primary transition-colors" : ""
+                    }`}
+                    title={!isPeerLocked ? "Click to edit transcript text" : undefined}
+                  >
                     {item.text}
                   </p>
                 )}

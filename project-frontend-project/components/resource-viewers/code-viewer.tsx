@@ -80,9 +80,9 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
     <div className="flex h-full w-full bg-background overflow-hidden">
       {/* Code Editor / Viewer Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Toolbar */}
-        <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-card/40 shrink-0">
-          <div className="flex items-center gap-3">
+        {/* Unified Sub-header Toolbar */}
+        <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0">
+          <div className="flex items-center gap-2.5">
             <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
               <CodeIcon className="size-3.5 text-blue-500" />
               {INITIAL_CODE_SPEC.filename}
@@ -101,33 +101,45 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-xs font-mono"
+              className="h-7 gap-1.5 text-xs font-mono"
               onClick={handleCopy}
             >
-              {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+              {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
               {copied ? "Copied" : "Copy Code"}
             </Button>
 
-            {!isEditing ? (
+            {isEditing ? (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5 text-xs font-medium"
+                  onClick={() => {
+                    setCodeEdit(effectiveCode)
+                    setIsEditing(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 text-xs font-medium"
+                  onClick={handleSaveCode}
+                >
+                  Confirm
+                </Button>
+              </div>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
                 disabled={Boolean(codeLock)}
-                className="h-8 gap-1.5 text-xs"
+                className="h-7 gap-1.5 text-xs font-medium"
                 onClick={() => setIsEditing(true)}
-                title={codeLock ? `Locked by ${codeCollab?.name}` : "Edit code"}
+                title={codeLock ? `Locked by ${codeCollab?.name}` : "Click code or this button to edit"}
               >
-                <Edit2 className="size-3.5" />
+                <Edit2 className="size-3" />
                 {codeLock ? "Locked" : "Edit Code"}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={handleSaveCode}
-              >
-                <Check className="size-3.5" />
-                Save Draft
               </Button>
             )}
 
@@ -135,7 +147,7 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => revertTempBlock(resourceName, anchorId)}
               >
                 <RotateCcw className="size-3 mr-1" />
@@ -169,7 +181,13 @@ export function CodeViewer({ resourceName }: CodeViewerProps) {
               autoFocus
             />
           ) : (
-            <div className="divide-y divide-slate-800/40">
+            <div
+              className={`divide-y divide-slate-800/40 ${!codeLock ? "cursor-pointer group/code" : ""}`}
+              onClick={() => {
+                if (!codeLock && !isEditing) setIsEditing(true)
+              }}
+              title={!codeLock ? "Click to edit code" : undefined}
+            >
               {lines.map((line, idx) => {
                 const lineNum = idx + 1
                 const isHighlighted = activeLine === lineNum

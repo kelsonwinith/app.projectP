@@ -39,7 +39,7 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
   const revertTempBlock = useDraftStore((state) => state.revertTempBlock)
 
   const [activeAnchor, setActiveAnchor] = React.useState<string>("p-001")
-  const [viewMode, setViewMode] = React.useState<"wysiwyg" | "markdown" | "split">("split")
+  const [showOutline, setShowOutline] = React.useState(true)
   const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null)
   const [editValues, setEditValues] = React.useState<Record<string, string>>({})
 
@@ -109,86 +109,80 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
   return (
     <div className="flex h-full w-full overflow-hidden bg-background">
       {/* Table of Contents / Outline ScrollSpy Sidebar */}
-      <aside className="w-64 border-r border-border shrink-0 hidden md:flex flex-col p-4 bg-muted/20">
-        <div className="flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <FileText className="size-3.5" />
-          <span>Outline ScrollSpy</span>
-        </div>
-        <nav className="space-y-1 text-xs">
-          {blocks.map((block) => {
-            const isActive = activeAnchor === block.id
-            return (
-              <button
-                key={block.id}
-                type="button"
-                onClick={() => scrollToAnchor(block.id)}
-                className={`w-full text-left px-2.5 py-1.5 rounded-md transition-all flex items-center justify-between group ${
-                  isActive
-                    ? "bg-primary text-primary-foreground font-medium shadow-xs"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <span className="truncate">{block.title}</span>
-                {block.isDraftModified && (
-                  <span className="size-1.5 rounded-full bg-amber-400 shrink-0 ml-1.5 animate-pulse" />
-                )}
-              </button>
-            )
-          })}
-        </nav>
-
-        <div className="mt-auto pt-4 border-t border-border">
-          <div className="p-2.5 rounded-lg border border-primary/20 bg-primary/5 text-[11px] text-muted-foreground leading-relaxed">
-            <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
-              <Sparkles className="size-3 text-primary" />
-              Local-First Grounding
-            </div>
-            Edits are auto-saved to temporary drafts on blur. Click &apos;Save Resource&apos; in header to audit and commit.
+      {showOutline && (
+        <aside className="w-64 border-r border-border shrink-0 hidden md:flex flex-col p-4 bg-card/30">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <FileText className="size-3.5 text-blue-500" />
+              Outline ScrollSpy
+            </span>
+            <Badge variant="outline" className="text-[10px] font-mono">
+              {blocks.length}
+            </Badge>
           </div>
-        </div>
-      </aside>
+          <nav className="space-y-1 text-xs">
+            {blocks.map((block) => {
+              const isActive = activeAnchor === block.id
+              return (
+                <button
+                  key={block.id}
+                  type="button"
+                  onClick={() => scrollToAnchor(block.id)}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-md transition-all flex items-center justify-between group ${
+                    isActive
+                      ? "bg-primary text-primary-foreground font-medium shadow-xs"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span className="truncate">{block.title}</span>
+                  {block.isDraftModified && (
+                    <span className="size-1.5 rounded-full bg-amber-400 shrink-0 ml-1.5 animate-pulse" />
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="mt-auto pt-4 border-t border-border">
+            <div className="p-2.5 rounded-lg border border-primary/20 bg-primary/5 text-[11px] text-muted-foreground leading-relaxed">
+              <div className="font-semibold text-foreground flex items-center gap-1.5 mb-1">
+                <Sparkles className="size-3 text-primary" />
+                Local-First Grounding
+              </div>
+              Edits are auto-saved to temporary drafts. Click &apos;Save Resource&apos; in header to audit and commit.
+            </div>
+          </div>
+        </aside>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Document Sub-header Toolbar */}
-        <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 bg-card/50">
-          <div className="flex items-center gap-2 text-xs">
-            <Badge variant="outline" className="font-mono text-[10px]">
-              Document SSoT
+        <div className="h-11 border-b border-border flex items-center justify-between px-5 shrink-0 bg-card/40">
+          <div className="flex items-center gap-2.5 text-xs">
+            <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
+              <FileText className="size-3.5 text-blue-500" />
+              Document Spec
             </Badge>
-            <span className="text-muted-foreground text-xs">•</span>
-            <span className="text-muted-foreground text-xs">
-              {blocks.filter((b) => b.isDraftModified).length} uncommitted draft block(s)
+            <span className="text-xs text-muted-foreground font-mono">
+              {blocks.length} sections
             </span>
+            {blocks.some((b) => b.isDraftModified) && (
+              <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px]">
+                Temp Drafts
+              </Badge>
+            )}
           </div>
 
-          <div className="flex items-center gap-1 bg-muted p-0.5 rounded-md text-xs">
+          <div className="flex items-center gap-2">
             <Button
-              variant={viewMode === "split" ? "secondary" : "ghost"}
+              variant={showOutline ? "secondary" : "outline"}
               size="sm"
-              className="h-6 px-2 text-xs"
-              onClick={() => setViewMode("split")}
+              className="h-7 text-xs gap-1.5"
+              onClick={() => setShowOutline(!showOutline)}
             >
-              <Columns className="size-3 mr-1" />
-              Split
-            </Button>
-            <Button
-              variant={viewMode === "wysiwyg" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-6 px-2 text-xs"
-              onClick={() => setViewMode("wysiwyg")}
-            >
-              <Eye className="size-3 mr-1" />
-              WYSIWYG
-            </Button>
-            <Button
-              variant={viewMode === "markdown" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-6 px-2 text-xs"
-              onClick={() => setViewMode("markdown")}
-            >
-              <Edit3 className="size-3 mr-1" />
-              Raw Markdown
+              <FileText className="size-3" />
+              {showOutline ? "Hide Outline" : "Show Outline"}
             </Button>
           </div>
         </div>
@@ -230,7 +224,7 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                       : "border-border bg-card/40 hover:border-border/80"
                   }`}
                 >
-                  {/* Floating Avatar centered on the edge of the top right corner with text on right */}
+                  {/* Absolute floating Avatar centered on the corner edge with text on right */}
                   {activeEditor && (
                     <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-3 z-20 pointer-events-auto">
                       <UserEditingBadge collaborator={activeEditor} textPosition="right" />
@@ -290,18 +284,17 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-7 text-xs font-medium"
                           onClick={() => setEditingBlockId(null)}
                         >
                           Cancel
                         </Button>
                         <Button
                           size="sm"
-                          className="h-7 text-xs gap-1"
+                          className="h-7 text-xs font-medium"
                           onClick={() => handleSaveBlock(block.id, block.originalCommitted)}
                         >
-                          <Check className="size-3" />
-                          Save Draft
+                          Confirm
                         </Button>
                       </div>
                     </div>
@@ -309,30 +302,17 @@ export function DocumentViewer({ resourceName }: DocumentViewerProps) {
                     <div
                       onClick={() => !isPeerLocked && handleStartEdit(block.id, block.currentContent)}
                       className={`${isPeerLocked ? "cursor-not-allowed select-none opacity-90" : "cursor-pointer group/content"} rounded-md transition-colors`}
-                      title={isPeerLocked ? `${peerCollab?.name} is currently editing this block` : "Click block to edit"}
+                      title={isPeerLocked ? `${peerCollab?.name} is currently editing this block` : "Click to edit in-place"}
                     >
-                      {viewMode === "markdown" ? (
-                        <pre className="text-xs font-mono p-3 bg-muted/40 rounded-md overflow-x-auto whitespace-pre-wrap text-foreground">
-                          {block.currentContent}
-                        </pre>
-                      ) : viewMode === "split" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs leading-relaxed">
-                          <div className="p-3 bg-muted/30 rounded-md font-mono text-[11px] text-muted-foreground">
-                            {block.currentContent}
-                          </div>
-                          <div className="p-3 bg-background rounded-md border border-border/40 text-foreground">
-                            {block.currentContent}
-                          </div>
+                      <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap group-hover/content:text-foreground">
+                        {block.currentContent}
+                      </p>
+                      {!isPeerLocked && (
+                        <div className="text-[10px] text-muted-foreground opacity-0 group-hover/content:opacity-100 transition-opacity mt-2 flex items-center gap-1">
+                          <Edit3 className="size-2.5" />
+                          Click to edit in-place
                         </div>
-                      ) : (
-                        <p className="text-xs leading-relaxed text-foreground/90 group-hover/content:text-foreground">
-                          {block.currentContent}
-                        </p>
                       )}
-                      <div className="text-[10px] text-muted-foreground opacity-0 group-hover/content:opacity-100 transition-opacity mt-1.5 flex items-center gap-1">
-                        <Edit3 className="size-2.5" />
-                        Click anywhere on this block to edit in-place
-                      </div>
                     </div>
                   )}
                 </section>

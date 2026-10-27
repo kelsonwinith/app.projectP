@@ -135,36 +135,41 @@ export function TableViewer({ resourceName }: TableViewerProps) {
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* Table Toolbar */}
-      <div className="h-14 border-b border-border flex items-center justify-between px-6 bg-card/40 shrink-0 gap-4">
-        <div className="flex items-center gap-3">
+      <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0 gap-4">
+        <div className="flex items-center gap-2.5">
           <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
             <TableIcon className="size-3.5 text-emerald-500" />
-            Cell Concurrency Grid
+            Data Grid
           </Badge>
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground font-mono">
+            {rows.length} rows
+          </span>
+          {Object.keys(drafts).length > 0 && (
+            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px]">
+              Temp Drafts
+            </Badge>
+          )}
+        </div>
+
+        {/* Tools: Filter & Metrics */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-52">
+            <Search className="absolute left-2.5 top-2 size-3 text-muted-foreground" />
             <Input
-              placeholder="Filter subjects, cohorts..."
-              className="h-8 pl-8 text-xs"
+              placeholder="Filter table..."
+              className="h-7 pl-7 text-xs"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
 
-        {/* Aggregations Summary */}
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="px-2.5 py-1 rounded bg-muted/60 border border-border">
-            <span className="text-muted-foreground">Subjects: </span>
-            <span className="font-semibold text-foreground">{rows.length}</span>
-          </div>
-          <div className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-            <span>Avg Response: </span>
-            <span className="font-bold">{avgResponse}%</span>
-          </div>
-          <div className="px-2.5 py-1 rounded bg-primary/10 border border-primary/20 text-primary">
-            <span>Active: </span>
-            <span className="font-bold">{activeCount}</span>
+          <div className="flex items-center gap-2 text-xs font-mono">
+            <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px]">
+              Avg: <span className="font-bold">{avgResponse}%</span>
+            </div>
+            <div className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[11px]">
+              Active: <span className="font-bold">{activeCount}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -257,12 +262,12 @@ export function TableViewer({ resourceName }: TableViewerProps) {
 
                         if (editingCell?.rowId === row.id && editingCell?.col === "currentDosage") {
                           return (
-                            <div className="relative flex items-center gap-1 border border-blue-500 rounded p-1 bg-blue-50/20 ring-1 ring-blue-500/30">
+                            <div className="relative flex items-center gap-1.5 border border-blue-500 rounded p-1 bg-blue-50/20 ring-1 ring-blue-500/30">
                               <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 pointer-events-auto z-10">
                                 <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
                               </div>
                               <Input
-                                className="h-7 text-xs font-mono"
+                                className="h-7 text-xs font-mono w-24"
                                 value={cellInputVal}
                                 onChange={(e) => setCellInputVal(e.target.value)}
                                 onKeyDown={(e) => {
@@ -272,11 +277,19 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                                 autoFocus
                               />
                               <Button
+                                variant="outline"
                                 size="sm"
-                                className="h-7 px-2"
+                                className="h-7 px-2 text-[11px]"
+                                onClick={() => setEditingCell(null)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-7 px-2 text-[11px]"
                                 onClick={() => handleFinishEdit(origRow)}
                               >
-                                <Check className="size-3" />
+                                Confirm
                               </Button>
                             </div>
                           )
@@ -307,7 +320,10 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                     {/* Response Rate (Editable with progress bar) */}
                     <td className="py-2 px-3 text-right">
                       {editingCell?.rowId === row.id && editingCell?.col === "responseRate" ? (
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="relative flex items-center justify-end gap-1.5 border border-blue-500 rounded p-1 bg-blue-50/20 ring-1 ring-blue-500/30">
+                          <div className="absolute top-0 left-full -translate-y-1/2 -translate-x-2 pointer-events-auto z-10">
+                            <UserEditingBadge collaborator={currentUser} size="xs" textPosition="right" />
+                          </div>
                           <Input
                             type="number"
                             className="h-7 w-20 text-xs font-mono text-right"
@@ -320,11 +336,19 @@ export function TableViewer({ resourceName }: TableViewerProps) {
                             autoFocus
                           />
                           <Button
+                            variant="outline"
                             size="sm"
-                            className="h-7 px-2"
+                            className="h-7 px-2 text-[11px]"
+                            onClick={() => setEditingCell(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 text-[11px]"
                             onClick={() => handleFinishEdit(origRow)}
                           >
-                            <Check className="size-3" />
+                            Confirm
                           </Button>
                         </div>
                       ) : (

@@ -37,11 +37,22 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
   const [newPinCoords, setNewPinCoords] = React.useState<{ x: number; y: number } | null>(null)
   const [newPinLabel, setNewPinLabel] = React.useState("")
   const [newPinComment, setNewPinComment] = React.useState("")
+  const [isEditingComment, setIsEditingComment] = React.useState(false)
+  const [commentEdit, setCommentEdit] = React.useState("")
 
   // Annotations list combining baseline and drafts
   const annotations = React.useMemo(() => {
-    const base = [...INITIAL_IMAGE_ANNOTATIONS]
-    // Check if new pins or modified pins exist in drafts
+    const base = INITIAL_IMAGE_ANNOTATIONS.map((ann) => {
+      const draft = drafts[`comment-${ann.id}`]
+      const override = committedOverrides[`comment-${ann.id}`]
+      const effectiveComment = draft?.proposedText ?? override ?? ann.comment
+      return {
+        ...ann,
+        comment: effectiveComment,
+        isDraft: !!draft,
+      }
+    })
+    // Check if new pins exist in drafts
     Object.keys(drafts).forEach((key) => {
       if (key.startsWith("ann-new-")) {
         try {
@@ -53,13 +64,32 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
       }
     })
     return base
-  }, [drafts])
+  }, [drafts, committedOverrides])
 
   const filteredAnnotations = annotations.filter(
     (a) => activeTag === "All" || a.tag === activeTag
   )
 
   const selectedAnnotation = annotations.find((a) => a.id === selectedPinId) || annotations[0]
+
+  React.useEffect(() => {
+    if (selectedAnnotation) {
+      setCommentEdit(selectedAnnotation.comment)
+      setIsEditingComment(false)
+    }
+  }, [selectedAnnotation?.id])
+
+  const handleSaveComment = () => {
+    if (!selectedAnnotation) return
+    const orig = INITIAL_IMAGE_ANNOTATIONS.find((a) => a.id === selectedAnnotation.id)
+    saveTempBlock(
+      resourceName,
+      `comment-${selectedAnnotation.id}`,
+      orig?.comment || selectedAnnotation.comment,
+      commentEdit
+    )
+    setIsEditingComment(false)
+  }
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isAddingPin) return
@@ -92,24 +122,27 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
     <div className="flex h-full w-full bg-background overflow-hidden">
       {/* Main Visual Arena */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Toolbar */}
-        <div className="h-12 border-b border-border flex items-center justify-between px-6 bg-card/40 shrink-0">
-          <div className="flex items-center gap-3">
+        {/* Unified Sub-header Toolbar */}
+        <div className="h-11 border-b border-border flex items-center justify-between px-5 bg-card/40 shrink-0">
+          <div className="flex items-center gap-2.5">
             <Badge variant="outline" className="font-mono text-xs gap-1.5 py-1">
               <ImageIcon className="size-3.5 text-rose-500" />
-              Vision AI Annotations
+              Vision Annotations
             </Badge>
+            <span className="text-xs text-muted-foreground font-mono">
+              {annotations.length} pins
+            </span>
 
-            <div className="flex items-center gap-1 bg-muted p-0.5 rounded-md text-xs">
+            <div className="flex items-center gap-1 ml-2">
               {["All", "Accessibility", "Brand", "Layout"].map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setActiveTag(tag)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                  className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
                     activeTag === tag
-                      ? "bg-background text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {tag}
@@ -121,13 +154,13 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
           <Button
             variant={isAddingPin ? "secondary" : "outline"}
             size="sm"
-            className="h-8 gap-1.5 text-xs"
+            className="h-7 gap-1.5 text-xs font-medium"
             onClick={() => {
               setIsAddingPin(!isAddingPin)
               setNewPinCoords(null)
             }}
           >
-            <Plus className="size-3.5" />
+            <Plus className="size-3" />
             {isAddingPin ? "Cancel Pin Dropper" : "Add Spatial Pin"}
           </Button>
         </div>
@@ -230,22 +263,22 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
                 value={newPinComment}
                 onChange={(e) => setNewPinComment(e.target.value)}
               />
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-1.5 pt-1">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-7 px-2.5 text-xs font-medium"
                   onClick={() => setNewPinCoords(null)}
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
-                  className="h-7 text-xs gap-1"
+                  className="h-7 px-2.5 text-xs font-medium"
                   disabled={!newPinLabel}
                   onClick={handleCreatePin}
                 >
-                  <Check className="size-3" /> Save Pin
+                  Confirm
                 </Button>
               </div>
             </div>
@@ -259,12 +292,59 @@ export function ImageViewer({ resourceName }: ImageViewerProps) {
               </div>
 
               <div>
-                <div className="text-[11px] font-mono text-muted-foreground mb-1">
-                  Design Verification Comment
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-mono text-muted-foreground">
+                    Design Verification Comment
+                  </span>
+                  {!isEditingComment && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingComment(true)}
+                      className="text-[11px] text-primary hover:underline"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
-                <p className="text-xs text-foreground/90 p-3 rounded-lg bg-muted/40 border border-border leading-relaxed">
-                  {selectedAnnotation.comment}
-                </p>
+                {isEditingComment ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      rows={3}
+                      className="text-xs"
+                      value={commentEdit}
+                      onChange={(e) => setCommentEdit(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs font-medium"
+                        onClick={() => {
+                          setCommentEdit(selectedAnnotation.comment)
+                          setIsEditingComment(false)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-7 px-2.5 text-xs font-medium"
+                        onClick={handleSaveComment}
+                      >
+                        Confirm
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p
+                    onClick={() => setIsEditingComment(true)}
+                    className="text-xs text-foreground/90 p-3 rounded-lg bg-muted/40 border border-border leading-relaxed cursor-pointer hover:border-primary/50 transition-colors"
+                    title="Click to edit comment"
+                  >
+                    {selectedAnnotation.comment}
+                  </p>
+                )}
               </div>
 
               <div className="p-2.5 rounded-lg bg-muted/20 border border-border text-[11px] font-mono text-muted-foreground">

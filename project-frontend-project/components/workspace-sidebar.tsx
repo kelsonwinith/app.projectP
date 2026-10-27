@@ -99,6 +99,11 @@ function DraggableFileItem({
   name: string
   collectionName: string
 }) {
+  const [isMounted, setIsMounted] = React.useState(false)
+  React.useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const { openResourceAndChat, deleteTarget, allResources } = useWorkspace()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `file:${collectionName}:${name}`,
@@ -118,8 +123,9 @@ function DraggableFileItem({
         <div
           ref={setNodeRef}
           style={style}
-          {...attributes}
-          {...listeners}
+          {...(isMounted ? attributes : {})}
+          {...(isMounted ? listeners : {})}
+          suppressHydrationWarning
           className={`group flex w-full items-center justify-between rounded-[9px] px-2 py-1.5 text-left text-[13px] text-[#637080] dark:text-[#90a0b2] hover:bg-[#f7f8fa] dark:hover:bg-[#1f2937]/50 hover:text-[#1c5da7] dark:hover:text-[#60a5fa] transition-colors cursor-grab active:cursor-grabbing select-none ${
             isDragging ? "opacity-30 ring-1 ring-[#1c5da7] bg-blue-50 dark:bg-blue-950/40" : ""
           }`}
@@ -399,7 +405,7 @@ export function WorkspaceSidebar() {
         <ContextMenu>
           <ContextMenuTrigger className="h-full block">
             <ScrollArea className="h-full pr-1">
-              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <DndContext id="workspace-sidebar-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
                 <RootDroppableContainer>
                   {collections.length > 0 || (rootFiles && rootFiles.length > 0) ? (
                     <div className="flex flex-col gap-0.5 min-h-[140px]">
