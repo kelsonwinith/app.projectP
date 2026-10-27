@@ -1,6 +1,6 @@
 # Implementation Roadmap & Milestones 🚀
 
-เอกสารฉบับนี้จัดทำแผนการพัฒนาโปรเจกต์ **CogniNest** ทีละขั้นตอน (Phase-by-Phase Roadmap) จากผืนผ้าใบว่างเปล่า (Blank Canvas) สู่ระบบ Real-time Collaborative Multi-Format AI Knowledge Operating System ที่สมบูรณ์แบบ
+เอกสารฉบับนี้จัดทำแผนการพัฒนาโปรเจกต์ **Project P** ทีละขั้นตอน (Phase-by-Phase Roadmap) จากผืนผ้าใบว่างเปล่า (Blank Canvas) สู่ระบบ Real-time Collaborative Multi-Format AI Knowledge Operating System ที่สมบูรณ์แบบ
 
 ---
 

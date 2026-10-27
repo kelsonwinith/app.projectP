@@ -6,7 +6,7 @@
 
 ## 1. ประเภท Resource ทั้ง 6 ชนิด และสิ่งที่ผู้ใช้ทำได้ (Resource Capabilities)
 
-ระบบ CogniNest แบ่งประเภท Resource ออกเป็น 6 รูปแบบหลัก โดยทั้งหมดจะถูกจัดเก็บเป็นข้อมูลโครงสร้างกลาง และ Re-represent แสดงผลบนเว็บเป็น HTML:
+ระบบ Project P แบ่งประเภท Resource ออกเป็น 6 รูปแบบหลัก โดยทั้งหมดจะถูกจัดเก็บเป็นข้อมูลโครงสร้างกลาง และ Re-represent แสดงผลบนเว็บเป็น HTML:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -94,8 +94,8 @@
 * หากนำโค้ดไดอะแกรมไปก็อปปี้แปะลงใน `เอกสารระบบ.doc` เมื่อวันหนึ่งทีมงานแก้ไข `system_architecture.graph` ข้อมูลใน `เอกสารระบบ.doc` จะกลายเป็นข้อมูลเก่า (Outdated) ทันที
 
 ### 2.2 โซลูชัน: Single Source of Truth ผ่าน Universal Resource URI
-ในระบบ CogniNest เอกสารทุกชิ้น ย่อหน้า สไลด์ หรือโหนด จะมี **Universal URI** ประจำตัว:
-`cogni://projects/{project_id}/resources/{resource_id}#{anchor_id}`
+ในระบบ Project P เอกสารทุกชิ้น ย่อหน้า สไลด์ หรือโหนด จะมี **Universal URI** ประจำตัว:
+`project-p://projects/{project_id}/resources/{resource_id}#{anchor_id}`
 
 ผู้ใช้สามารถนำ `Resource A` ไปใส่ใน `Resource B` ได้ **2 รูปแบบ โดยไม่เกิดการ Duplicate ข้อมูล**:
 
@@ -127,12 +127,12 @@
 * **การเขียนใน Document:** ผู้ใช้พิมพ์ `/embed` หรือลากไฟล์ `system_architecture.graph` มาวางในหน้าเอกสาร
 * **โครงสร้างโค้ดภายใน HTML (ไม่เก็บโค้ดกราฟ แต่เก็บ Pointer):**
   ```html
-  <cogni-transclusion 
+  <project-p-transclusion 
       resource-id="uuid-graph-res" 
       resource-name="system_architecture.graph"
       mode="interactive-component"
       auto-sync="true">
-  </cogni-transclusion>
+  </project-p-transclusion>
   ```
 * **พฤติกรรม:**
   1. เมื่อเปิดอ่าน `เอกสารระบบ.doc` ระบบ Next.js จะดึงข้อมูลล่าสุดจาก `system_architecture.graph` มารันเป็น Interactive Component บนหน้าเอกสารทันที
@@ -142,7 +142,7 @@
 ---
 
 ### 2.4 รูปแบบการอ้างอิงที่ 2: Inline Semantic Link with Live Hover Card
-* **การเขียนใน Document:** พิมพ์ `@` หรือพิมพ์ลิงก์ Markdown เช่น `[แผนผังระบบ](cogni://resources/uuid-graph-res)`
+* **การเขียนใน Document:** พิมพ์ `@` หรือพิมพ์ลิงก์ Markdown เช่น `[แผนผังระบบ](project-p://resources/uuid-graph-res)`
 * **พฤติกรรม:**
   - แสดงผลเป็นข้อความลิงก์ที่มีไอคอนระบุประเภท เช่น `[🕸️ แผนผังระบบ]`
   - เมื่อผู้ใช้เอาเมาส์ชี้ (Hover) จะมี **Live Mini-Preview Card** เด้งขึ้นมา แสดงภาพย่อของแผนผังและคำอธิบายสรุป โดยที่ผู้อ่านไม่ต้องคลิกเปิดหน้าต่างใหม่

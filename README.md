@@ -1,4 +1,4 @@
-# CogniNest (SynapseLM) 🧠
+# Project P 🧠
 ### Universal Multi-Format AI Knowledge & Block-Locked Collaborative Resource OS
 
 > **Next-generation Source-Grounded Multi-Modal Knowledge Engine & Living Collaborative Workspace**  
@@ -8,7 +8,7 @@
 
 ## 📌 สรุปภาพรวมโปรเจกต์ (Executive Summary)
 
-**CogniNest** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user ที่ให้ความสำคัญกับ **โครงสร้าง Resource หลากมิติ (6 Formats)**, **การอ้างอิงข้ามไฟล์โดยไม่ Duplicate ข้อมูล (Transclusion Engine)**, และ **ความถูกต้องของข้อมูล (Data Integrity)**:
+**Project P** เป็น Web Application สำหรับการจัดการเอกสาร ค้นคว้า และร่วมมือกันสร้างสรรค์องค์ความรู้ด้วย AI สำหรับทีมแบบ Multi-user ที่ให้ความสำคัญกับ **โครงสร้าง Resource หลากมิติ (6 Formats)**, **การอ้างอิงข้ามไฟล์โดยไม่ Duplicate ข้อมูล (Transclusion Engine)**, และ **ความถูกต้องของข้อมูล (Data Integrity)**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐

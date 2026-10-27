@@ -1,6 +1,6 @@
 # Technical & System Architecture 🏗️
 
-เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **CogniNest** ฉบับปรับปรุง เพื่อรองรับ **ระบบ Shared Temp Draft State**, **การล็อกระดับ Cell ในตาราง**, **3-Tab Save & Selective Staging Engine**, **สถาปัตยกรรม Canonical Term Standardization**, และ **การตรวจจับ Conflict ใน 2 จังหวะ (On Generate & On Save)**
+เอกสารฉบับนี้อธิบายสถาปัตยกรรมทางเทคนิคของระบบ **Project P** ฉบับปรับปรุง เพื่อรองรับ **ระบบ Shared Temp Draft State**, **การล็อกระดับ Cell ในตาราง**, **3-Tab Save & Selective Staging Engine**, **สถาปัตยกรรม Canonical Term Standardization**, และ **การตรวจจับ Conflict ใน 2 จังหวะ (On Generate & On Save)**
 
 ---
 

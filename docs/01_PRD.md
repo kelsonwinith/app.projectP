@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD) 📋
-## Project: CogniNest (Universal AI Knowledge & Collaborative Resource OS)
+## Project: Project P (Universal AI Knowledge & Collaborative Resource OS)
 
 ---
 
